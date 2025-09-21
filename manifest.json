@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"id": "nexus-hub",
+	"name": "Nexus Hub",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Uma central de controle financeiro com interface gráfica para o Obsidian.",
+	"author": "Seu Nome",
+	"authorUrl": "https://github.com/seu-usuario",
 	"isDesktopOnly": false
 }

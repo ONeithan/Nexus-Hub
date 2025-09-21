@@ -1,94 +1,80 @@
-# Obsidian Sample Plugin
+# Nexus Hub - Your Personal Finance Dashboard in Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Nexus Hub transforms your Obsidian vault into a powerful, all-in-one financial control center. Track your expenses, manage budgets, plan your goals, and gain deep insights into your financial life, all without leaving your favorite note-taking app.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## ✨ Key Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- **📊 Interactive Dashboard:** Get a clear overview of your monthly income, expenses, pending payments, and projected balance.
+- **💸 Transaction Management:** Easily add single, recurring, or installment-based transactions. Our smart suggestion system even helps categorize your spending.
+- **💳 Credit Card Control:** Register your credit cards, track installment purchases, and never lose sight of your bill's due date and total amount.
+- **🎯 Goal Setting:** Create and track savings goals (like a trip) or debt payoff goals. Watch your progress and stay motivated.
+- **💰 Simplified Budgeting:** Set monthly budgets for different categories and visually track your spending to stay on target.
+- **🚨 Emergency Fund:** Build and manage your financial safety net with dedicated contribution and withdrawal features.
+- **📈 Detailed Reports:** Analyze your spending by category, visualize your cash flow, and watch your net worth evolve over time with beautiful, interactive charts.
+- **🔮 Future Projections:** See a 30-day projection of your balance based on upcoming recurring payments.
+- **🏆 Gamification:** Stay engaged with your finances by earning Nexus Score points and unlocking achievements for good financial habits.
 
-## First time developing plugins?
+## 🚀 Getting Started
 
-Quick starting guide for new plugin devs:
+### Installation
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+Once the plugin is released in the community store, you will be able to install it directly through Obsidian. For now, manual installation is required:
 
-## Releasing new releases
+1.  Download the `main.js`, `styles.css`, and `manifest.json` files from the latest Releases page.
+2.  Create a new folder named `nexus-hub` inside your Obsidian vault's `.obsidian/plugins/` directory.
+3.  Copy the downloaded files into the `nexus-hub` folder.
+4.  Reload Obsidian and enable the Nexus Hub plugin in your settings.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### First Setup
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+Once installed, Nexus Hub will greet you with a quick onboarding process to set up your name and monthly income. After that, you're ready to explore!
 
-## Adding your plugin to the community plugin list
+## 🤝 Contributions
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
-## How to use
+---
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+*Built with ❤️ for the Obsidian community.*
 
-## Manually installing the plugin
+---
+---
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+# Nexus Hub - Seu Painel de Finanças Pessoais no Obsidian
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
+Nexus Hub transforma seu cofre do Obsidian em um poderoso centro de controle financeiro completo. Acompanhe suas despesas, gerencie orçamentos, planeje seus objetivos e obtenha insights profundos sobre sua vida financeira, tudo sem sair do seu aplicativo de anotações favorito.
 
-## Funding URL
+## ✨ Funcionalidades Principais
 
-You can include funding URLs where people who use your plugin can financially support it.
+- **📊 Dashboard Interativo:** Tenha uma visão geral clara de sua renda mensal, despesas, pagamentos pendentes e saldo projetado.
+- **💸 Gestão de Transações:** Adicione facilmente transações únicas, recorrentes ou parceladas. Nosso sistema de sugestão inteligente até ajuda a categorizar seus gastos.
+- **💳 Controle de Cartão de Crédito:** Cadastre seus cartões de crédito, acompanhe compras parceladas e nunca perca de vista a data de vencimento e o valor total da sua fatura.
+- **🎯 Definição de Metas:** Crie e acompanhe metas de economia (como uma viagem) ou de quitação de dívidas. Observe seu progresso e mantenha-se motivado.
+- **💰 Orçamento Simplificado:** Defina orçamentos mensais para diferentes categorias e acompanhe visualmente seus gastos para se manter no alvo.
+- **🚨 Reserva de Emergência:** Construa e gerencie sua rede de segurança financeira com recursos dedicados de contribuição e retirada.
+- **📈 Relatórios Detalhados:** Analise seus gastos por categoria, visualize seu fluxo de caixa e observe a evolução do seu patrimônio líquido ao longo do tempo com gráficos bonitos e interativos.
+- **🔮 Projeções Futuras:** Veja uma projeção de 30 dias do seu saldo com base nos próximos pagamentos recorrentes.
+- **🏆 Gamificação:** Mantenha-se engajado com suas finanças ganhando pontos de Nexus Score e desbloqueando conquistas por bons hábitos financeiros.
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+## 🚀 Como Começar
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
+### Instalação
 
-If you have multiple URLs, you can also do:
+Assim que o plugin for lançado na loja da comunidade, você poderá instalá-lo diretamente pelo Obsidian. Por enquanto, a instalação manual é necessária:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+1.  Baixe os arquivos `main.js`, `styles.css` e `manifest.json` da página de Releases mais recente.
+2.  Crie uma nova pasta chamada `nexus-hub` dentro do diretório `.obsidian/plugins/` do seu cofre do Obsidian.
+3.  Copie os arquivos baixados para a pasta `nexus-hub`.
+4.  Recarregue o Obsidian e ative o plugin Nexus Hub em suas configurações.
 
-## API Documentation
+### Primeira Configuração
 
-See https://github.com/obsidianmd/obsidian-api
+Uma vez instalado, o Nexus Hub irá recebê-lo com um rápido processo de onboarding para configurar seu nome e renda mensal. Depois disso, você está pronto para explorar!
+
+## 🤝 Contribuições
+
+Contribuições, issues e solicitações de funcionalidades são bem-vindas! Sinta-se à vontade para verificar a página de issues.
+
+---
+
+*Construído com ❤️ para a comunidade Obsidian.*
