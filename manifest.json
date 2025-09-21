@@ -3,8 +3,8 @@
 	"name": "Nexus Hub",
 	"version": "0.1.0",
 	"minAppVersion": "1.5.0",
-	"description": "Uma central de controle financeiro com interface gráfica para o Obsidian.",
-	"author": "Seu Nome",
-	"authorUrl": "https://github.com/seu-usuario",
+	"description": "An all-in-one personal finance dashboard for Obsidian. Track expenses, manage budgets, set goals, and gain deep insights into your financial life.",
+	"author": "ONeithan",
+	"authorUrl": "https://github.com/ONeithan",
 	"isDesktopOnly": false
 }
