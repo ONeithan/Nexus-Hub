@@ -33,6 +33,10 @@ Once installed, Nexus Hub will greet you with a quick onboarding process to set 
 
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
+## 📜 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
 ---
 
 *Built with ❤️ for the Obsidian community.*
@@ -74,6 +78,10 @@ Uma vez instalado, o Nexus Hub irá recebê-lo com um rápido processo de onboar
 ## 🤝 Contribuições
 
 Contribuições, issues e solicitações de funcionalidades são bem-vindas! Sinta-se à vontade para verificar a página de issues.
+
+## 📜 Licença
+
+Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ---
 
