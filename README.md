@@ -35,7 +35,7 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 ## 📜 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for the full text.
 
 ---
 
@@ -81,7 +81,7 @@ Contribuições, issues e solicitações de funcionalidades são bem-vindas! Sin
 
 ## 📜 Licença
 
-Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICENSE) para o texto completo.
 
 ---
 
