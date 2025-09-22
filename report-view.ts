@@ -3,8 +3,8 @@ import NexusHubPlugin from "./main";
 import { t } from "./lang";
 import { eventManager } from "./EventManager";
 import { formatAsCurrency } from "./helpers";
-import { ReportGenerator } from "./report-generator";
-import { Chart, ChartTypeRegistry, TooltipItem } from "chart.js/auto";
+import { ReportGenerator, SankeyDataPoint } from "./report-generator";
+import { Chart, ChartTypeRegistry, TooltipItem, ScriptableContext, ActiveElement } from "chart.js/auto";
 import { SankeyController, Flow } from 'chartjs-chart-sankey';
 // Nota: Esta funcionalidade requer a biblioteca 'xlsx' (SheetJS).
 // Em um projeto real, ela seria adicionada via: npm install xlsx
@@ -20,7 +20,7 @@ export class ReportView extends ItemView {
     private generator: ReportGenerator;
     private pieChart: Chart | null = null;
     private barChart: Chart<'bar', number[], string> | null = null;
-    private sankeyChart: any = null; // Use 'any' to avoid complex type issues with custom charts
+    private sankeyChart: Chart<'sankey', SankeyDataPoint[], unknown> | null = null;
     private netWorthChart: Chart | null = null;
     private kpiElements: Record<string, HTMLElement> = {};
     private startDate: moment.Moment;
@@ -153,8 +153,7 @@ export class ReportView extends ItemView {
         summaryContainer.createEl('h3', { text: t('REPORT_VIEW_ANALYSIS_TITLE') });
 
         // --- Annual View Container (initially hidden) ---
-        const annualContainer = container.createDiv({ cls: 'annual-summary-view' });
-        annualContainer.style.display = 'none';
+        const annualContainer = container.createDiv({ cls: 'annual-summary-view is-hidden' });
         annualContainer.createEl("canvas", { attr: { id: "annual-category-chart" } });
 
 
@@ -173,12 +172,12 @@ export class ReportView extends ItemView {
         barChartContainer.createEl("canvas", { attr: { id: "monthly-flow-chart" } });
 
         // Sankey Chart Container
-        const sankeyChartContainer = chartGrid.createDiv({ cls: "chart-container", attr: { 'style': 'grid-column: 1 / -1;' } }); // Full width
+        const sankeyChartContainer = chartGrid.createDiv({ cls: "chart-container full-width-chart" }); // Full width
         sankeyChartContainer.createEl('h3', { text: t('REPORT_VIEW_CASH_FLOW_TITLE') });
         sankeyChartContainer.createEl("canvas", { attr: { id: "sankey-flow-chart" } });
 
         // Net Worth Chart Container
-        const netWorthChartContainer = chartGrid.createDiv({ cls: "chart-container", attr: { 'style': 'grid-column: 1 / -1;' } }); // Full width
+        const netWorthChartContainer = chartGrid.createDiv({ cls: "chart-container full-width-chart" }); // Full width
         netWorthChartContainer.createEl('h3', { text: t('REPORT_VIEW_NET_WORTH_TITLE') });
         netWorthChartContainer.createEl("canvas", { attr: { id: "net-worth-chart" } });
 
@@ -299,19 +298,15 @@ export class ReportView extends ItemView {
     }
 
     private renderDrilldownView(category: string) {
-        // Hide default view elements
-        this.hideDefaultView();
-
-
         // 1. Hide the bar chart
         const barChartWrapper = this.containerEl.querySelector('#bar-chart-wrapper') as HTMLElement;
-        if (barChartWrapper) barChartWrapper.style.display = 'none';
+        if (barChartWrapper) barChartWrapper.addClass('is-hidden');
         // Hide Sankey chart as well
         const sankeyChartContainer = this.containerEl.querySelector('#sankey-flow-chart')?.parentElement as HTMLElement;
-        if (sankeyChartContainer) sankeyChartContainer.style.display = 'none';
+        if (sankeyChartContainer) sankeyChartContainer.addClass('is-hidden');
         // Hide Net Worth chart
         const netWorthChartContainer = this.containerEl.querySelector('#net-worth-chart')?.parentElement as HTMLElement;
-        if (netWorthChartContainer) netWorthChartContainer.style.display = 'none';
+        if (netWorthChartContainer) netWorthChartContainer.addClass('is-hidden');
 
 
         // 2. Destroy the old pie chart
@@ -378,13 +373,13 @@ export class ReportView extends ItemView {
 
         // Ensure the bar chart wrapper is visible
         const barChartWrapper = this.containerEl.querySelector('#bar-chart-wrapper') as HTMLElement;
-        if (barChartWrapper) barChartWrapper.style.display = 'block';
+        if (barChartWrapper) barChartWrapper.removeClass('is-hidden');
         // Ensure Sankey chart is visible
         const sankeyChartContainer = this.containerEl.querySelector('#sankey-flow-chart')?.parentElement as HTMLElement;
-        if (sankeyChartContainer) sankeyChartContainer.style.display = 'block';
+        if (sankeyChartContainer) sankeyChartContainer.removeClass('is-hidden');
         // Ensure Net Worth chart is visible
         const netWorthChartContainer = this.containerEl.querySelector('#net-worth-chart')?.parentElement as HTMLElement;
-        if (netWorthChartContainer) netWorthChartContainer.style.display = 'block';
+        if (netWorthChartContainer) netWorthChartContainer.removeClass('is-hidden');
 
 
         this.barChart = new Chart(barChartCanvas, {
@@ -435,10 +430,10 @@ export class ReportView extends ItemView {
         const sankeyData = this.generator.getSankeyData(this.startDate, this.endDate);
 
         if (sankeyData.length === 0 && parent) {
-            parent.style.display = 'none';
+            parent.addClass('is-hidden');
             return;
         }
-        if (parent) parent.style.display = 'block';
+        if (parent) parent.removeClass('is-hidden');
 
         this.sankeyChart = new Chart(sankeyCanvas, {
             type: 'sankey',
@@ -446,9 +441,10 @@ export class ReportView extends ItemView {
                 datasets: [{
                     label: t('REPORT_VIEW_SANKEY_CHART_LABEL'),
                     data: sankeyData,
-                    colorFrom: () => 'rgba(75, 192, 192, 0.6)',
-                    colorTo: (c: any) => {
-                        if (c.raw.to === t('REPORT_VIEW_SANKEY_SAVED')) return 'rgba(153, 102, 255, 0.6)';
+                    colorFrom: (_c: ScriptableContext<'sankey'>) => 'rgba(75, 192, 192, 0.6)',
+                    colorTo: (c: ScriptableContext<'sankey'>) => {
+                        const raw = c.raw as SankeyDataPoint;
+                        if (raw.to === t('REPORT_VIEW_SANKEY_SAVED')) return 'rgba(153, 102, 255, 0.6)';
                         return 'rgba(255, 99, 132, 0.6)';
                     },
                     colorMode: 'gradient',
@@ -460,13 +456,14 @@ export class ReportView extends ItemView {
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const rawData = (elements[0].element as any).$context.raw as { from: string, to: string, flow: number };
+                        const rawData = (elements[0].element as any).$context.raw as SankeyDataPoint;
                         
                         if (rawData && rawData.to) {
                             const category = rawData.to;
                             // Permite o drill-down apenas em categorias de despesa reais, ignorando os nós de origem/fim.
                             if (category !== t('REPORT_VIEW_SANKEY_TOTAL_INCOME') && category !== t('REPORT_VIEW_SANKEY_SAVED')) {
                                 this.drilldownCategory = category;
+                                this.currentView = 'drilldown'; // Define o modo de visualização para drilldown
                                 this.renderCharts(); // Dispara a renderização da visão de drill-down
                             }
                         }
@@ -475,8 +472,8 @@ export class ReportView extends ItemView {
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            label: (context: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-                                const item = context.raw as { from: string, to: string, flow: number };
+                            label: (context: TooltipItem<'sankey'>) => {
+                                const item = context.raw as SankeyDataPoint;
                                 return t('REPORT_VIEW_SANKEY_TOOLTIP', { from: item.from, to: item.to, flow: formatAsCurrency(item.flow) });
                             }
                         }
@@ -556,7 +553,7 @@ export class ReportView extends ItemView {
         // 2. Show the annual view container
         const annualContainer = this.containerEl.querySelector('.annual-summary-view') as HTMLElement;
         if (!annualContainer) return;
-        annualContainer.style.display = 'block';
+        annualContainer.removeClass('is-hidden');
         annualContainer.empty(); // Clear previous content
 
         // 3. Get annual data
@@ -627,17 +624,17 @@ export class ReportView extends ItemView {
     }
 
     private hideDefaultView() {
-        (this.containerEl.querySelector('.kpi-container') as HTMLElement).style.display = 'none';
-        (this.containerEl.querySelector('.report-summary-container') as HTMLElement).style.display = 'none';
-        (this.containerEl.querySelector('.chart-grid') as HTMLElement).style.display = 'none';
-        (this.containerEl.querySelector('.annual-summary-view') as HTMLElement).style.display = 'none';
+        (this.containerEl.querySelector('.kpi-container') as HTMLElement)?.addClass('is-hidden');
+        (this.containerEl.querySelector('.report-summary-container') as HTMLElement)?.addClass('is-hidden');
+        (this.containerEl.querySelector('.chart-grid') as HTMLElement)?.addClass('is-hidden');
+        (this.containerEl.querySelector('.annual-summary-view') as HTMLElement)?.addClass('is-hidden');
     }
 
     private showDefaultView() {
-        (this.containerEl.querySelector('.kpi-container') as HTMLElement).style.display = 'grid';
-        (this.containerEl.querySelector('.report-summary-container') as HTMLElement).style.display = 'block';
-        (this.containerEl.querySelector('.chart-grid') as HTMLElement).style.display = 'grid';
-        (this.containerEl.querySelector('.annual-summary-view') as HTMLElement).style.display = 'none';
+        (this.containerEl.querySelector('.kpi-container') as HTMLElement)?.removeClass('is-hidden');
+        (this.containerEl.querySelector('.report-summary-container') as HTMLElement)?.removeClass('is-hidden');
+        (this.containerEl.querySelector('.chart-grid') as HTMLElement)?.removeClass('is-hidden');
+        (this.containerEl.querySelector('.annual-summary-view') as HTMLElement)?.addClass('is-hidden');
     }
 
     private async exportToExcel() {

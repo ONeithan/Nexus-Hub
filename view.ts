@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Notice, setIcon, moment } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice, setIcon, moment, App } from "obsidian";
 import { t } from "./lang";
 import NexusHubPlugin from "./main";
 import { ReportGenerator } from "./report-generator";
@@ -8,6 +8,14 @@ import { eventManager } from './EventManager';
 import { Transaction, CreditCard } from "./settings";
 
 export const NEXUS_HUB_VIEW_TYPE = "nexus-hub-view";
+
+// Adiciona uma interface para evitar o uso de 'any' ao acessar as configurações
+interface AppWithSettings extends App {
+    setting: {
+        open: () => void;
+        openTabById: (id: string) => void;
+    };
+}
 
 export class NexusHubView extends ItemView {
     plugin: NexusHubPlugin;
@@ -55,8 +63,8 @@ export class NexusHubView extends ItemView {
             'settings', // nome do ícone
             t('SETTINGS_OPEN_TOOLTIP'), // texto do tooltip
             () => {
-            (this.app as any).setting.open();
-            (this.app as any).setting.openTabById(this.plugin.manifest.id);
+            (this.app as AppWithSettings).setting.open();
+            (this.app as AppWithSettings).setting.openTabById(this.plugin.manifest.id);
             }
         );
     
@@ -689,7 +697,7 @@ export class NexusHubView extends ItemView {
     
             const progressBarWrapper = cardEl.createDiv({ cls: 'progress-bar-wrapper' });
             const progressBarFill = progressBarWrapper.createDiv({ cls: 'progress-bar-fill' });
-            progressBarFill.style.width = `${Math.min(percentage, 100)}%`;
+            progressBarFill.style.setProperty('--progress-percent', `${Math.min(percentage, 100)}%`);
     
             if (percentage > 100) progressBarFill.addClass('is-over-limit');
             else if (percentage > 80) progressBarFill.addClass('is-warning');

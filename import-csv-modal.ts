@@ -26,7 +26,7 @@ export class ImportCsvModal extends Modal {
                     attr: {
                         type: 'file',
                         accept: '.csv, .txt', // Aceita .csv e .txt
-                        style: 'display: none;'
+                        class: 'visually-hidden'
                     }
                 });
                 btn.buttonEl.appendChild(input);

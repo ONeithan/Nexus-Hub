@@ -164,8 +164,6 @@ export default class NexusHubPlugin extends Plugin {
 
 	onunload() {
 		console.log('Descarregando o plugin Nexus Hub.');
-		// Garante que a view seja destacada do workspace ao desabilitar o plugin
-		this.app.workspace.detachLeavesOfType(NEXUS_HUB_VIEW_TYPE);
 	}
 
 	private exportFullBackup() {

@@ -3,6 +3,12 @@ import { NexusHubSettings } from './settings';
 import { t } from './lang';
 import { formatAsCurrency } from './helpers';
 
+export interface SankeyDataPoint {
+    from: string;
+    to: string;
+    flow: number;
+}
+
 export class ReportGenerator {
     private settings: NexusHubSettings;
 
@@ -74,7 +80,7 @@ export class ReportGenerator {
         };
     }
 
-    public getSankeyData(startDate: moment.Moment, endDate: moment.Moment): { from: string, to: string, flow: number }[] {
+    public getSankeyData(startDate: moment.Moment, endDate: moment.Moment): SankeyDataPoint[] {
         const relevantTransactions = this.settings.transactions.filter(transaction => 
             transaction.status === 'paid' && 
             moment(transaction.date).isBetween(startDate, endDate, undefined, '[]')

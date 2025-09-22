@@ -676,16 +676,16 @@ export class AddTransactionModal extends Modal {
                 .setValue(this.isRecurring)
                 .onChange(value => {
                     this.isRecurring = value;
-                    recurringOptionsContainer.style.display = value ? 'block' : 'none';
-                    singleOptionsContainer.style.display = value ? 'none' : 'block';
+                    recurringOptionsContainer.toggleClass('is-hidden', !value);
+                    singleOptionsContainer.toggleClass('is-hidden', value);
                 }));
 
         // Container for single transaction options
-        singleOptionsContainer.style.display = this.isRecurring ? 'none' : 'block';
+        singleOptionsContainer.toggleClass('is-hidden', this.isRecurring);
         this.renderSingleTransactionOptions(singleOptionsContainer);
 
         // Container for recurring/installment options
-        recurringOptionsContainer.style.display = this.isRecurring ? 'block' : 'none';
+        recurringOptionsContainer.toggleClass('is-hidden', !this.isRecurring);
         this.renderRecurringSubOptions(recurringOptionsContainer);
         
         // Common Fields (that are truly common)
@@ -703,7 +703,6 @@ export class AddTransactionModal extends Modal {
     }
 
     private renderSingleTransactionOptions(container: HTMLElement) {
-        container.style.display = 'block'; // Show by default
         container.empty();
         
         // Dropdown for description as requested for "Variable Expense"
@@ -719,20 +718,20 @@ export class AddTransactionModal extends Modal {
             const isStandard = standardOptions.includes(this.description);
             if (this.description && !isStandard) {
                 dd.setValue('__OTHER__');
-                otherNameInput.settingEl.style.display = 'flex';
+                otherNameInput.settingEl.removeClass('is-hidden');
             } else {
                 dd.setValue(this.description || t('MODAL_ADD_TRANSACTION_STANDARD_OPTION_LIGHT'));
-                otherNameInput.settingEl.style.display = 'none';
+                otherNameInput.settingEl.addClass('is-hidden');
                 if (!this.description) this.handleDescriptionChange(t('MODAL_ADD_TRANSACTION_STANDARD_OPTION_LIGHT')); // Set initial value and try to categorize
             }
 
             dd.onChange(val => {
                 if (val !== '__OTHER__') {
                     this.handleDescriptionChange(val);
-                    otherNameInput.settingEl.style.display = 'none';
+                    otherNameInput.settingEl.addClass('is-hidden');
                 } else {
                     this.description = '';
-                    otherNameInput.settingEl.style.display = 'flex';
+                    otherNameInput.settingEl.removeClass('is-hidden');
                     (otherNameInput.components[0] as TextComponent).inputEl.focus();
                 }
             });
@@ -772,13 +771,13 @@ export class AddTransactionModal extends Modal {
             text.inputEl.type = 'date'; // YYYY-MM-DD
             text.onChange(val => this.endDate = val);
         });
-        endDateSetting.settingEl.style.display = this.hasEndDate ? 'flex' : 'none';
+        endDateSetting.settingEl.toggleClass('is-hidden', !this.hasEndDate);
 
         new Setting(container).setName(t('MODAL_ADD_TRANSACTION_RECURRING_HAS_END_DATE')).addToggle(toggle => toggle
             .setValue(this.hasEndDate)
             .onChange(val => {
                 this.hasEndDate = val;
-                endDateSetting.settingEl.style.display = val ? 'flex' : 'none';
+                endDateSetting.settingEl.toggleClass('is-hidden', !val);
             }));
     }
 
