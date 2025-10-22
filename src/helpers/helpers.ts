@@ -1,5 +1,5 @@
 import { CreditCard, Transaction } from '../views/settings';
-import { moment } from 'obsidian';
+import moment from 'moment';
 
 /**
  * Converte uma string formatada como moeda (ex: "R$ 1.500,00") para um número.

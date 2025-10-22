@@ -1,4 +1,5 @@
-import { ItemView, WorkspaceLeaf, moment, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
+import moment from 'moment';
 import NexusHubPlugin from "../main";
 import { Transaction } from "./settings";
 import { formatAsCurrency } from "../helpers/helpers";

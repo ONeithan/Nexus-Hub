@@ -1,4 +1,4 @@
-import { moment } from 'obsidian';
+import moment from 'moment';
 import NexusHubPlugin from '../main';
 import { UpdateSalaryModal } from '../components/modals';
 

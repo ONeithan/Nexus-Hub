@@ -1192,3 +1192,108 @@
 .theme-professional .nexus-hub-account-item:hover {
     background-color: #30304A;
 }
+
+
+
+/* --- Estilos Adicionais para a View de Relatórios --- */
+.theme-professional .nexus-reports-container {
+    padding: 20px;
+}
+
+.theme-professional .reports-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr); /* Grid de 12 colunas */
+    grid-auto-rows: minmax(180px, auto); /* Altura mínima maior para os cards */
+    gap: 20px;
+}
+
+.theme-professional .report-card {
+    background-color: var(--nexus-bg-secondary);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--nexus-border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.theme-professional .report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.theme-professional .report-card h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--nexus-text-primary);
+    border-bottom: 1px solid var(--nexus-border-color);
+    padding-bottom: 10px;
+}
+
+/* --- Dimensionamento dos Cards no Grid --- */
+.theme-professional .kpi-card {
+    grid-column: span 12; 
+    grid-row: span 1;
+}
+
+.theme-professional .sankey-card {
+    grid-column: span 12; 
+    grid-row: span 2; 
+}
+
+.theme-professional .insights-card {
+    grid-column: span 12;
+    grid-row: span 1;
+}
+
+.theme-professional .reports-grid .report-card:not(.kpi-card):not(.sankey-card):not(.insights-card) {
+    grid-column: span 6;
+}
+
+@media (max-width: 992px) {
+    .theme-professional .reports-grid .report-card:not(.kpi-card):not(.sankey-card):not(.insights-card) {
+        grid-column: span 12; /* Em telas menores, todos os cards ocupam a largura total */
+    }
+}
+
+/* --- Melhorias nos KPIs --- */
+.theme-professional .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+.theme-professional .kpi-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px;
+    border-right: 1px solid var(--nexus-border-color);
+}
+
+.theme-professional .kpi-grid .kpi-item:last-child {
+    border-right: none;
+}
+
+.theme-professional .kpi-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--nexus-accent-primary);
+}
+
+.theme-professional .kpi-label {
+    font-size: 0.9em;
+    color: var(--nexus-text-secondary);
+    text-align: center;
+}
+
+.theme-professional .kpi-subtext {
+    font-size: 0.8em;
+    color: var(--text-faint);
+}

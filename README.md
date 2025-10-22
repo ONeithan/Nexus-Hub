@@ -1,49 +1,3 @@
-# Nexus Hub - Your Personal Finance Dashboard in Obsidian
-
-Nexus Hub transforms your Obsidian vault into a powerful, all-in-one financial control center. Track your expenses, manage budgets, plan your goals, and gain deep insights into your financial life, all without leaving your favorite note-taking app.
-
-## ✨ Key Features
-
-- **📊 Interactive Dashboard:** Get a clear overview of your monthly income, expenses, pending payments, and projected balance.
-- **💸 Transaction Management:** Easily add single, recurring, or installment-based transactions. Our smart suggestion system even helps categorize your spending.
-- **💳 Credit Card Control:** Register your credit cards, track installment purchases, and never lose sight of your bill's due date and total amount.
-- **🎯 Goal Setting:** Create and track savings goals (like a trip) or debt payoff goals. Watch your progress and stay motivated.
-- **💰 Simplified Budgeting:** Set monthly budgets for different categories and visually track your spending to stay on target.
-- **🚨 Emergency Fund:** Build and manage your financial safety net with dedicated contribution and withdrawal features.
-- **📈 Detailed Reports:** Analyze your spending by category, visualize your cash flow, and watch your net worth evolve over time with beautiful, interactive charts.
-- **🔮 Future Projections:** See a 30-day projection of your balance based on upcoming recurring payments.
-- **🏆 Gamification:** Stay engaged with your finances by earning Nexus Score points and unlocking achievements for good financial habits.
-
-## 🚀 Getting Started
-
-### Installation
-
-Once the plugin is released in the community store, you will be able to install it directly through Obsidian. For now, manual installation is required:
-
-1.  Download the `main.js`, `styles.css`, and `manifest.json` files from the latest Releases page.
-2.  Create a new folder named `nexus-hub` inside your Obsidian vault's `.obsidian/plugins/` directory.
-3.  Copy the downloaded files into the `nexus-hub` folder.
-4.  Reload Obsidian and enable the Nexus Hub plugin in your settings.
-
-### First Setup
-
-Once installed, Nexus Hub will greet you with a quick onboarding process to set up your name and monthly income. After that, you're ready to explore!
-
-## 🤝 Contributions
-
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
-
-## 📜 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for the full text.
-
----
-
-*Built with ❤️ for the Obsidian community.*
-
----
----
-
 # Nexus Hub - Seu Painel de Finanças Pessoais no Obsidian
 
 Nexus Hub transforma seu cofre do Obsidian em um poderoso centro de controle financeiro completo. Acompanhe suas despesas, gerencie orçamentos, planeje seus objetivos e obtenha insights profundos sobre sua vida financeira, tudo sem sair do seu aplicativo de anotações favorito.
@@ -60,7 +14,14 @@ Nexus Hub transforma seu cofre do Obsidian em um poderoso centro de controle fin
 - **🔮 Projeções Futuras:** Veja uma projeção de 30 dias do seu saldo com base nos próximos pagamentos recorrentes.
 - **🏆 Gamificação:** Mantenha-se engajado com suas finanças ganhando pontos de Nexus Score e desbloqueando conquistas por bons hábitos financeiros.
 
-## 🚀 Como Começar
+## 🚀 Novidades da Versão 1.0.0
+
+- **✨ Novo Recurso: Salário Quinzenal:** Agora você pode configurar sua renda como mensal ou quinzenal desde o primeiro uso do plugin, garantindo que o Nexus Hub se adapte perfeitamente ao seu fluxo de recebimentos.
+- **🎨 Melhoria Visual no Dashboard de Relatórios:** O painel de relatórios foi redesenhado com um tema profissional mais moderno e uma grade dinâmica, tornando a análise de dados mais clara e agradável.
+- **🐞 Correção de Bugs Críticos:** Foram resolvidos diversos erros de compilação que impediam a correta inicialização e funcionamento do plugin em diversas situações.
+- **🔧 Simplificação do Código:** O sistema interno de tradução foi removido, tornando o código mais limpo, eficiente e fácil de manter.
+
+## Como Começar
 
 ### Instalação
 
@@ -73,7 +34,54 @@ Assim que o plugin for lançado na loja da comunidade, você poderá instalá-lo
 
 ### Primeira Configuração
 
-Uma vez instalado, o Nexus Hub irá recebê-lo com um rápido processo de onboarding para configurar seu nome e renda mensal. Depois disso, você está pronto para explorar!
+Uma vez instalado, o Nexus Hub irá recebê-lo com um rápido processo de onboarding para configurar seu nome e sua renda (mensal ou quinzenal). Depois disso, você está pronto para explorar!
+
+## 👨‍💻 Para Desenvolvedores
+
+Se você deseja contribuir para o desenvolvimento do Nexus Hub, veja como configurar seu ambiente.
+
+### Pré-requisitos
+
+-   [Node.js](https://nodejs.org/) (versão 16 ou superior)
+-   [npm](https://www.npmjs.com/)
+
+### Compilando o Plugin
+
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/ONeithan/nexus-hub.git
+    cd nexus-hub
+    ```
+
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+3.  **Compile para produção:**
+    Este comando compila o código TypeScript e cria os arquivos finais `main.js` e `styles.css` na raiz do projeto.
+    ```bash
+    npm run build
+    ```
+
+4.  **Inicie o modo de desenvolvimento:**
+    Este comando ficará observando por mudanças no diretório `src` e recompilará o plugin automaticamente.
+    ```bash
+    npm run dev
+    ```
+
+### Fazendo o Deploy para o seu Cofre
+
+O projeto inclui um script útil para copiar automaticamente os arquivos compilados para o seu cofre local do Obsidian para testes rápidos.
+
+1.  **Configure o destino:**
+    Abra o arquivo `deploy.ps1` e altere a variável `$destinationDir` para apontar para a pasta `nexus-hub` dentro do diretório de plugins do seu cofre.
+
+2.  **Execute o script de deploy:**
+    Este comando irá compilar o plugin e copiar os arquivos necessários (`main.js`, `styles.css`, `manifest.json`) para o diretório de destino.
+    ```bash
+    npm run deploy
+    ```
 
 ## 🤝 Contribuições
 
@@ -85,4 +93,4 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICEN
 
 ---
 
-*Construído com ❤️ para a comunidade Obsidian.*
+*Construído com ❤️ para a comunidade Obsidian por ONeithan.*

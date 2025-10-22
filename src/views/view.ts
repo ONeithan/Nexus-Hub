@@ -1,8 +1,9 @@
-import { moment, ItemView, WorkspaceLeaf, Notice, setIcon, App } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice, setIcon, App } from "obsidian";
+import moment from 'moment';
 
 import NexusHubPlugin from "../main";
 import { ReportGenerator } from "../services/report-generator"; 
-import { AddTransactionModal, GoalsModal, EmergencyFundModal, AccountDetailModal, ManageCreditCardsModal, EditUserModal, ExtraIncomeModal, CardBillDetailModal, ManageBudgetsModal, NexusScoreHistoryModal, AchievementsModal, ResetConfirmationModal, ManageCategoriesModal, EditTransactionModal } from "../components/modals";
+import { AddTransactionModal, GoalsModal, /* EmergencyFundModal, */ AccountDetailModal, ManageCreditCardsModal, EditUserModal, ExtraIncomeModal, CardBillDetailModal, ManageBudgetsModal, NexusScoreHistoryModal, AchievementsModal, ResetConfirmationModal, ManageCategoriesModal, EditTransactionModal, ImportCsvModal } from "../components/modals";
 import { ConfirmationModal } from "../helpers/ui-helpers";
 import { formatAsCurrency, calculateCardBill } from "../helpers/helpers";
 import { eventManager } from '../helpers/EventManager';
@@ -144,6 +145,10 @@ export class NexusHubView extends ItemView {
         addTransactionBtn.setText('Adicionar Transação');
         addTransactionBtn
             .addEventListener('click', () => new AddTransactionModal(this.app, this.plugin, this.currentMonth, () => this.updateDashboardCalculations()).open());
+
+        const importCsvBtn = actionsEl.createEl('button', { cls: 'nexus-hub-button-secondary' });
+        importCsvBtn.setText('Importar CSV');
+        importCsvBtn.addEventListener('click', () => new ImportCsvModal(this.app, this.plugin).open());
             
         actionsEl.createEl('hr');
     
@@ -182,7 +187,7 @@ export class NexusHubView extends ItemView {
         const emergencyBtn = navContainer.createDiv({cls: 'nav-item'});
         setIcon(emergencyBtn.createDiv({cls: 'nav-item-icon'}), 'shield');
         emergencyBtn.createDiv({cls: 'nav-item-label', text: 'Fundo de Emergência'});
-        emergencyBtn.addEventListener('click', () => new EmergencyFundModal(this.app, this.plugin).open());
+        // emergencyBtn.addEventListener('click', () => new EmergencyFundModal(this.app, this.plugin).open());
 
         const reportsBtn = navContainer.createDiv({cls: 'nav-item'});
         setIcon(reportsBtn.createDiv({cls: 'nav-item-icon'}), 'pie-chart');

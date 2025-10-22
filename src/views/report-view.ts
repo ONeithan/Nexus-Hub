@@ -1,5 +1,6 @@
 // Force re-compile
-import { moment, ItemView, WorkspaceLeaf, setIcon, Setting } from "obsidian";
+import { ItemView, WorkspaceLeaf, setIcon, Setting } from "obsidian";
+import moment from 'moment';
 import NexusHubPlugin from "../main";
 
 import { eventManager } from "../helpers/EventManager";
@@ -38,6 +39,7 @@ export class ReportView extends ItemView {
         const container = this.containerEl.children[1];
         container.empty();
         container.addClass("nexus-reports-container");
+        container.addClass("theme-professional");
 
         this.renderDateFilters(container);
         this.renderReports(container);
@@ -128,6 +130,13 @@ export class ReportView extends ItemView {
             });
     }
 
+    private createCardHeader(container: HTMLElement, title: string, icon: string) {
+        const header = container.createEl('div', { cls: 'report-card-header' });
+        const iconEl = header.createSpan({ cls: 'report-card-icon' });
+        setIcon(iconEl, icon);
+        header.createEl('h3', { text: title });
+    }
+
     private renderReports(container: Element) {
         // Clear existing reports and charts
         const reportsGrid = container.querySelector('.reports-grid');
@@ -140,24 +149,27 @@ export class ReportView extends ItemView {
         // 1. KPIs
         this.renderKPIs(grid.createDiv({ cls: "report-card kpi-card" }));
 
-        // 2. Spending by Category
+        // 2. Waterfall Chart
+        this.renderWaterfallChart(grid.createDiv({ cls: "report-card" }));
+
+        // 3. Spending by Category
         this.renderSpendingByCategory(grid.createDiv({ cls: "report-card" }));
 
-        // 3. Monthly Flow
+        // 4. Monthly Flow
         this.renderMonthlyFlow(grid.createDiv({ cls: "report-card" }));
 
-        // 4. Sankey
+        // 5. Sankey
         this.renderSankey(grid.createDiv({ cls: "report-card sankey-card" }));
 
-        // 5. Net Worth
+        // 6. Net Worth
         this.renderNetWorth(grid.createDiv({ cls: "report-card" }));
 
-        // 6. Emergency Fund
+        // 7. Emergency Fund
         this.renderEmergencyFund(grid.createDiv({ cls: "report-card" }));
 
-        // 7. Insights
+        // 8. Insights
         const insightsContainer = grid.createDiv({ cls: "report-card insights-card" });
-        insightsContainer.createEl('h3', { text: 'Insights Automáticos' });
+        this.createCardHeader(insightsContainer, 'Insights Automáticos', 'sparkles');
         const insights = this.generator.getReportSummary(this.startDate, this.endDate);
         this.renderInsights(insights.map(insight => insight));
     }
@@ -176,35 +188,38 @@ export class ReportView extends ItemView {
     }
 
     private renderKPIs(container: HTMLElement) {
-        container.createEl('h3', { text: 'Indicadores Chave' });
+        this.createCardHeader(container, 'Indicadores Chave', 'gauge');
         const kpis = this.generator.getDashboardKPIs(this.startDate, this.endDate);
 
         const kpiGrid = container.createDiv({ cls: 'kpi-grid' });
 
-        const createKpi = (label: string, value: string, subtext?: string) => {
+        const createKpi = (label: string, value: string, icon: string, subtext?: string) => {
             const kpiEl = kpiGrid.createDiv({ cls: 'kpi-item' });
-            kpiEl.createDiv({ cls: 'kpi-value', text: value });
-            kpiEl.createDiv({ cls: 'kpi-label', text: label });
+            const iconEl = kpiEl.createDiv({ cls: 'kpi-icon' });
+            setIcon(iconEl, icon);
+            const textWrapper = kpiEl.createDiv();
+            textWrapper.createDiv({ cls: 'kpi-value', text: value });
+            textWrapper.createDiv({ cls: 'kpi-label', text: label });
             if (subtext) {
-                kpiEl.createDiv({ cls: 'kpi-subtext', text: subtext });
+                textWrapper.createDiv({ cls: 'kpi-subtext', text: subtext });
             }
         };
 
-        createKpi('Renda Total', formatAsCurrency(kpis.totalIncome));
-        createKpi('Despesas Totais', formatAsCurrency(kpis.totalExpenses));
-        createKpi('Saldo Final', formatAsCurrency(kpis.balance));
-        createKpi('Taxa de Poupança', `${(kpis.savingsRate * 100).toFixed(1)}%`);
-        createKpi('Gasto Médio Diário', formatAsCurrency(kpis.avgDailySpending));
-        createKpi('Principal Categoria de Gasto', kpis.topSpendingCategory.name, formatAsCurrency(kpis.topSpendingCategory.amount));
+        createKpi('Renda Total', formatAsCurrency(kpis.totalIncome), 'arrow-up');
+        createKpi('Despesas Totais', formatAsCurrency(kpis.totalExpenses), 'arrow-down');
+        createKpi('Saldo Final', formatAsCurrency(kpis.balance), 'scale');
+        createKpi('Taxa de Poupança', `${(kpis.savingsRate * 100).toFixed(1)}%`, 'piggy-bank');
+        createKpi('Gasto Médio Diário', formatAsCurrency(kpis.avgDailySpending), 'calendar-days');
+        createKpi('Principal Categoria', kpis.topSpendingCategory.name, 'tag', formatAsCurrency(kpis.topSpendingCategory.amount));
     }
 
     private renderSpendingByCategory(container: HTMLElement) {
-        container.createEl('h3', { text: 'Gastos por Categoria' });
+        this.createCardHeader(container, 'Gastos por Categoria', 'pie-chart');
         const canvas = container.createEl("canvas");
         const data = this.generator.getSpendingByCategory(this.startDate, this.endDate);
 
         if (data.labels.length === 0) {
-            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message' });
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
             return;
         }
 
@@ -215,9 +230,8 @@ export class ReportView extends ItemView {
                 datasets: [{
                     data: data.data,
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)',
-                        'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)',
-                        'rgba(199, 199, 199, 0.8)', 'rgba(83, 102, 255, 0.8)', 'rgba(100, 255, 80, 0.8)'
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                        '#C9CBCF', '#4D5D9A', '#2ECC71'
                     ],
                 }]
             },
@@ -258,7 +272,7 @@ export class ReportView extends ItemView {
         if (detailContainer) detailContainer.remove();
 
         const container = this.containerEl.children[1].createDiv({ cls: 'category-detail-container' });
-        container.createEl('h3', { text: `Detalhes da Categoria: ${category}` });
+        this.createCardHeader(container, `Detalhes da Categoria: ${category}`, 'tag');
 
         const closeButton = container.createEl('button', { cls: 'close-btn' });
         setIcon(closeButton, 'x');
@@ -280,12 +294,12 @@ export class ReportView extends ItemView {
     }
 
     private renderMonthlyFlow(container: HTMLElement) {
-        container.createEl('h3', { text: 'Fluxo Mensal (Renda vs. Despesa)' });
+        this.createCardHeader(container, 'Fluxo Mensal (Renda vs. Despesa)', 'bar-chart-horizontal');
         const canvas = container.createEl("canvas");
         const data = this.generator.getMonthlyFlow(this.startDate, this.endDate);
 
         if (data.labels.length === 0) {
-            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message' });
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
             return;
         }
 
@@ -321,12 +335,12 @@ export class ReportView extends ItemView {
     }
 
     private renderSankey(container: HTMLElement) {
-        container.createEl('h3', { text: 'Fluxo de Renda (Sankey)' });
+        this.createCardHeader(container, 'Fluxo de Renda (Sankey)', 'git-compare');
         const canvas = container.createEl("canvas");
         const data = this.generator.getSankeyData(this.startDate, this.endDate);
 
         if (data.length === 0) {
-            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message' });
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
             return;
         }
 
@@ -335,8 +349,8 @@ export class ReportView extends ItemView {
             data: {
                 datasets: [{
                     data: data,
-                    colorFrom: () => 'rgba(75, 192, 192, 0.6)',
-                    colorTo: () => 'rgba(255, 99, 132, 0.6)',
+                    colorFrom: () => '#36A2EB',
+                    colorTo: () => '#FF6384',
                     colorMode: 'gradient',
                 }]
             },
@@ -360,12 +374,12 @@ export class ReportView extends ItemView {
     }
 
     private renderNetWorth(container: HTMLElement) {
-        container.createEl('h3', { text: 'Histórico de Patrimônio Líquido' });
+        this.createCardHeader(container, 'Histórico de Patrimônio Líquido', 'line-chart');
         const canvas = container.createEl("canvas");
         const data = this.generator.getNetWorthHistory(this.startDate, this.endDate);
 
         if (data.labels.length === 0) {
-            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message' });
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
             return;
         }
 
@@ -376,7 +390,7 @@ export class ReportView extends ItemView {
                 datasets: [{
                     label: 'Patrimônio Líquido',
                     data: data.data,
-                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderColor: '#9966FF',
                     backgroundColor: 'rgba(153, 102, 255, 0.2)',
                     fill: true,
                     tension: 0.1,
@@ -388,12 +402,12 @@ export class ReportView extends ItemView {
     }
 
     private renderEmergencyFund(container: HTMLElement) {
-        container.createEl('h3', { text: 'Histórico do Fundo de Emergência' });
+        this.createCardHeader(container, 'Fundo de Emergência', 'shield');
         const canvas = container.createEl("canvas");
         const data = this.generator.getEmergencyFundHistory(this.startDate, this.endDate);
 
         if (data.labels.length === 0) {
-            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message' });
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
             return;
         }
 
@@ -404,13 +418,60 @@ export class ReportView extends ItemView {
                 datasets: [{
                     label: 'Saldo do Fundo de Emergência',
                     data: data.data,
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderColor: '#36A2EB',
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     fill: true,
                     tension: 0.1,
                 }]
             },
             options: this.getLineChartOptions()
+        });
+        this.charts.push(chart);
+    }
+
+    private renderWaterfallChart(container: HTMLElement) {
+        this.createCardHeader(container, 'Fluxo de Caixa (Cascata)', 'trending-up');
+        const canvas = container.createEl("canvas");
+        const data = this.generator.getWaterfallData(this.startDate, this.endDate);
+
+        if (data.labels.length === 0) {
+            container.createEl('p', { text: 'Nenhum dado para exibir no período selecionado.', cls: 'no-data-message-professional' });
+            return;
+        }
+
+        const chart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Fluxo de Caixa',
+                    data: data.data as any, // Cast to any to satisfy chart.js typing for floating bars
+                    backgroundColor: data.colors,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context: TooltipItem<'bar'>) {
+                                const raw: any = context.raw;
+                                const value = raw[1] - raw[0];
+                                return `${context.label}: ${formatAsCurrency(value)}`;
+                            }
+                        }
+                    }
+                }
+            }
         });
         this.charts.push(chart);
     }

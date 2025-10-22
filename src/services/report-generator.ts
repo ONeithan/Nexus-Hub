@@ -1,4 +1,4 @@
-import { moment } from 'obsidian';
+import moment from 'moment';
 import { NexusHubSettings, Transaction, Goal } from '../views/settings';
 import { formatAsCurrency } from '../helpers/helpers';
 
@@ -387,5 +387,51 @@ export class ReportGenerator {
             spendingLabels: Array.from(spendingByCategory.keys()),
             spendingData: Array.from(spendingByCategory.values()),
         };
+    }
+
+    public getWaterfallData(startDate: moment.Moment, endDate: moment.Moment): { labels: string[], data: number[][], colors: string[] } {
+        const relevantTransactions = this.settings.transactions.filter((transaction: Transaction) =>
+            transaction.status === 'paid' &&
+            moment(transaction.date).isBetween(startDate, endDate, undefined, '[]')
+        );
+
+        const totalIncome = relevantTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        if (totalIncome === 0) {
+            return { labels: [], data: [], colors: [] };
+        }
+
+        const spendingByCategory = new Map<string, number>();
+        relevantTransactions
+            .filter(t => t.type === 'expense')
+            .forEach(t => {
+                const currentAmount = spendingByCategory.get(t.category) || 0;
+                spendingByCategory.set(t.category, currentAmount + t.amount);
+            });
+
+        const sortedSpending = Array.from(spendingByCategory.entries()).sort((a, b) => b[1] - a[1]);
+
+        const labels = ['Renda'];
+        const data: number[][] = [[0, totalIncome]];
+        const colors = ['rgba(75, 192, 192, 0.8)']; // Green for income
+
+        let runningTotal = totalIncome;
+        sortedSpending.forEach(([category, amount]) => {
+            labels.push(category);
+            data.push([runningTotal - amount, runningTotal]);
+            colors.push('rgba(255, 99, 132, 0.8)'); // Red for expenses
+            runningTotal -= amount;
+        });
+
+        const savings = runningTotal;
+        if (savings > 0) {
+            labels.push('Saldo Final');
+            data.push([0, savings]);
+            colors.push('rgba(54, 162, 235, 0.8)'); // Blue for savings
+        }
+
+        return { labels, data, colors };
     }
 }

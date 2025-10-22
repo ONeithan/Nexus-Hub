@@ -11,11 +11,12 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
-const context = await esbuild.context({
+// Build for JS
+const jsContext = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["main.ts"],
+	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",
@@ -41,9 +42,20 @@ const context = await esbuild.context({
 	minify: prod,
 });
 
+// Build for CSS
+const cssContext = await esbuild.context({
+    entryPoints: ["src/styles/styles.css"],
+    bundle: true,
+    outfile: "styles.css",
+    minify: prod,
+});
+
+
 if (prod) {
-	await context.rebuild();
+	await jsContext.rebuild();
+    await cssContext.rebuild();
 	process.exit(0);
 } else {
-	await context.watch();
+	await jsContext.watch();
+    await cssContext.watch();
 }
