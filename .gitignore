@@ -31,5 +31,8 @@ lancamentos_futuros_manual.md
 # Workspace Configs
 *.code-workspace
 
+# Archive files
+*.zip
+
 # OS files
 Thumbs.db

@@ -134,5 +134,23 @@ O Nexus Hub nasceu da necessidade de tornar o controle financeiro menos "planilh
 
 ---
 
+## ☕ Apoie o Desenvolvedor
+Gostou do Nexus Hub? Considere apoiar o projeto! Isso ajuda a manter as atualizações constantes e novos recursos.
+
+<div style="display: flex; gap: 20px; align-items: flex-start;">
+    <a href="https://ko-fi.com/oneithan">
+        <img src="assets/readme/kofi.png" alt="Ko-fi" height="50">
+    </a>
+    <a href="https://livepix.gg/oneithan">
+        <img src="assets/readme/livepix.png" alt="LivePix" height="50">
+    </a>
+</div>
+
+**Ou escaneie o QR Code:**
+
+![QR Code](assets/readme/qrcode.png)
+
+---
+
 **Desenvolvido por ONeithan.**
 *Mantenha seu saldo positivo e sua coleção completa.*
