@@ -10,6 +10,7 @@ O **Nexus Hub** não é apenas um plugin de finanças; é um sistema completo de
 ## ✨ Destaques & Funcionalidades
 
 ### 📊 Dashboard Financeiro (Futurista)
+![Dashboard](assets/screenshots/dashboard.png)
 O coração do seu sistema. Visualize seu fluxo financeiro com um design limpo, moderno e responsivo.
 - **Resumo do Mês:** Veja Receitas, Despesas Pendentes e Saldo Projetado em tempo real.
 - **Gráficos Dinâmicos:** Fluxo de caixa mensal, distribuição por categoria e evolução patrimonial.
@@ -32,6 +33,7 @@ Pare de se perder nas faturas.
 - **Pagar Fatura:** Ao pagar uma fatura, o sistema baixa todas as despesas vinculadas e gera uma transação consolidada na sua conta principal.
 
 ### 🎯 Metas & Objetivos (Quests Reais)
+![Metas](assets/screenshots/goals.png)
 Transforme sonhos em barras de progresso.
 - **Metas de Poupança:** "Viagem Japão", "PC Gamer". O sistema calcula quanto falta e sugere depósitos.
 - **Controle de Dívidas:** "Quitar Financiamento". Acompanhe a redução do seu débito mês a mês.
@@ -42,11 +44,17 @@ Transforme sonhos em barras de progresso.
 - Defina quanto quer juntar e quanto vai depositar por mês.
 - **Resgate de Emergência:** Se o bicho pegar, use o botão de emergência para cobrir despesas críticas sem destruir seu orçamento.
 
+### 📊 Relatórios Detalhados
+![Relatórios](assets/screenshots/reports.png)
+Acompanhe sua evolução com gráficos precisos de gastos por categoria, fluxo de caixa e evolução patrimonial.
+
 ### 🎮 Gamificação (Finanças RPG)
+![Perfil](assets/screenshots/profile.png)
 A parte mais divertida. Gerenciar dinheiro não precisa ser chato.
 - **Nível & XP:** Ganhe experiência ao registrar transações, pagar contas em dia e bater metas. Suba de nível e ganhe títulos (de "Iniciado" a "Magnata").
 - **Conquistas (Badges):** Medalhas desbloqueáveis por comportamentos saudáveis (e alguns segredos).
 - **Nexus Trading Cards:** Um jogo de cartas colecionáveis completo dentro do seu financeiro.
+    ![Coleção](assets/screenshots/collection.png)
     - **Drop System:** Ao usar o plugin, você tem chance de "dropar" cartas de diferentes raridades (Comum, Rara, Épica, Lendária).
     - **Sistema de Raridade:** Cartas Lendárias são extremamente difíceis de conseguir.
     - **Séries Temáticas:** Colecione séries como "Cyberpunk", "Medieval", "Crypto" e "Space Odyssey".
@@ -69,8 +77,10 @@ A parte mais divertida. Gerenciar dinheiro não precisa ser chato.
 
 ### Instalação Manual (Agora)
 1. Baixe o último release no GitHub.
-2. Extraia os arquivos (`main.js`, `manifest.json`, `styles.css`) na pasta `.obsidian/plugins/nexus-hub` do seu cofre.
-3. Recarregue o Obsidian.
+2. Crie uma pasta chamada `nexus-hub` dentro de `.obsidian/plugins/` no seu cofre.
+3. Extraia/Copie os arquivos `main.js`, `manifest.json`, `styles.css` para dentro dessa pasta.
+4. **Importante:** Copie também a pasta `assets` inteira para dentro de `.obsidian/plugins/nexus-hub/` (ela contém os sons e imagens essenciais).
+5. Recarregue o Obsidian e ative o plugin.
 
 ---
 
