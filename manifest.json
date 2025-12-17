@@ -1,0 +1,10 @@
+{
+	"id": "nexus-hub",
+	"name": "Nexus Hub",
+	"version": "0.1.6",
+	"minAppVersion": "1.5.0",
+	"description": "An all-in-one personal finance dashboard for Obsidian. Track expenses, manage budgets, set goals, and gain deep insights into your financial life.",
+	"author": "ONeithan",
+	"authorUrl": "https://github.com/ONeithan",
+	"isDesktopOnly": false
+}
