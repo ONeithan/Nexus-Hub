@@ -31,7 +31,9 @@ lancamentos_futuros_manual.md
 # Workspace Configs
 *.code-workspace
 
-# Archive files
+# Archive files (Release)
+release/
+create_release.bat
 *.zip
 
 # OS files
