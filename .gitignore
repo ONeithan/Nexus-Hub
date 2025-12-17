@@ -20,3 +20,16 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# Temporary / Log files
+build_error.log
+build_error.txt
+message.txt
+deploy.ps1
+lancamentos_futuros_manual.md
+
+# Workspace Configs
+*.code-workspace
+
+# OS files
+Thumbs.db
