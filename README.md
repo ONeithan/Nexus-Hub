@@ -44,7 +44,14 @@ Transforme sonhos em barras de progresso.
 - Defina quanto quer juntar e quanto vai depositar por mês.
 - **Resgate de Emergência:** Se o bicho pegar, use o botão de emergência para cobrir despesas críticas sem destruir seu orçamento.
 
-### 📊 Relatórios Detalhados
+### ⚙️ Configurações & Segurança
+Defina suas preferências e mantenha seus dados seguros.
+![Configurações de Salário](assets/screenshots/settings_salary.png)
+- **Salário e Frequência:** Configure quanto você ganha e se o recebimento é Mensal ou Quinzenal.
+- **Zona de Perigo:**
+![Zona de Perigo](assets/screenshots/settings_danger.png)
+    - Precisa recomeçar do zero? Use o botão "Resetar Todos os Dados" para limpar transações e conquistas, mantendo apenas as configurações vitais.
+
 ![Relatórios](assets/screenshots/reports.png)
 Acompanhe sua evolução com gráficos precisos de gastos por categoria, fluxo de caixa e evolução patrimonial.
 
@@ -75,12 +82,19 @@ A parte mais divertida. Gerenciar dinheiro não precisa ser chato.
 3. Procure por `Nexus Hub`.
 4. Clique em Install e depois Enable.
 
-### Instalação Manual (Agora)
-1. Baixe o último release no GitHub.
-2. Crie uma pasta chamada `nexus-hub` dentro de `.obsidian/plugins/` no seu cofre.
-3. Extraia/Copie os arquivos `main.js`, `manifest.json`, `styles.css` para dentro dessa pasta.
-4. **Importante:** Copie também a pasta `assets` inteira para dentro de `.obsidian/plugins/nexus-hub/` (ela contém os sons e imagens essenciais).
-5. Recarregue o Obsidian e ative o plugin.
+### Instalação Manual (Recomendada)
+Para garantir que todos os sons e efeitos funcionem corretamente, siga estes passos:
+
+1. Vá na aba **Releases** aqui no GitHub e baixe o arquivo `.zip` (ex: `nexus-hub-1.0.0.zip`).
+2. No seu cofre do Obsidian, vá até a pasta `.obsidian/plugins/`.
+    * *Dica:* Se a pasta `.obsidian` estiver oculta, habilite "Mostrar arquivos ocultos" no seu sistema.
+3. Crie uma nova pasta chamada `nexus-hub`.
+4. Extraia **todo o conteúdo do ZIP** dentro dessa pasta.
+5. **Verifique:** A pasta deve ficar exatamente assim (com a pasta `assets` junto):
+   
+   ![Guia de Instalação](assets/screenshots/install_guide.png)
+
+6. Recarregue o Obsidian e ative o plugin em *Community Plugins*.
 
 ---
 
