@@ -39,6 +39,11 @@ export default class NexusHubPlugin extends Plugin {
 		this.salaryManager = new SalaryManager(this);
 		this.dropSystem = new DropSystem(this);
 
+		// Inicializa cache para evitar spam de "Novidades" falsas no boot
+		this.app.workspace.onLayoutReady(async () => {
+			await this.dropSystem.initialize();
+		});
+
 		// =====================================================
 		// =====================================================
 		// STREAK TRACKING LOGIC
@@ -61,7 +66,6 @@ export default class NexusHubPlugin extends Plugin {
 
 		// INITIALIZE THE NEW ACHIEVEMENT ENGINE
 		initializeAchievementEngine(this);
-		// =====================================================
 
 		// Mostra o modal de onboarding se ele nunca foi concluído.
 		if (!this.settings.onboardingComplete) {
@@ -172,6 +176,17 @@ export default class NexusHubPlugin extends Plugin {
 			name: 'Exportar backup dos dados',
 			callback: () => {
 				this.exportFullBackup();
+			}
+		});
+
+		// COMANDO DE TESTE: Verificar todas as cartas
+		this.addCommand({
+			id: 'test-check-all-cards',
+			name: '[DEBUG] Verificar todas as cartas',
+			callback: async () => {
+				console.log('[DEBUG] Verificando todas as cartas...');
+				await this.dropSystem.checkAllCards();
+				new Notice('Verificação de cartas concluída! Veja o console.');
 			}
 		});
 
@@ -415,10 +430,7 @@ export default class NexusHubPlugin extends Plugin {
 		eventManager.emit('data-changed');
 	}
 
-	async handlePayment(paidTransaction: Transaction) {
-		// This becomes a simple wrapper around the bulk handler
-		await this.handleBulkPayment([paidTransaction]);
-	}
+
 
 	async payFromEmergencyFund(transactionId: string) {
 		const transaction = this.settings.transactions.find(tx => tx.id === transactionId);
@@ -447,8 +459,35 @@ export default class NexusHubPlugin extends Plugin {
 
 		// 3. Save and notify
 		await this.saveSettings();
-		eventManager.emit('data-changed');
+
+		eventManager.emit('data-changed', this.settings);
 		// new Notice(`Conta '${transaction.description}' paga com o fundo de emergência.`);
+	}
+
+	/**
+	 * Marca uma transação como paga e verifica cartas/conquistas
+	 * Chamado quando o usuário marca o checkbox como pago
+	 */
+	async handlePayment(transaction: Transaction) {
+		console.log('[handlePayment] Called with transaction:', transaction);
+
+		if (!transaction) {
+			console.error('[handlePayment] No transaction provided!');
+			return;
+		}
+
+		// Marcar como pago
+		transaction.status = 'paid';
+
+		// Salvar
+		await this.saveSettings();
+
+		// Verificar cartas e conquistas
+		console.log('[handlePayment] Calling dropSystem.checkForDrop');
+		await this.dropSystem.checkForDrop(transaction);
+
+		// Notificar mudanças
+		eventManager.emit('data-changed', this.settings);
 	}
 
 	async checkAndCompleteDebtGoal(paidTransaction: Transaction) {
@@ -457,7 +496,7 @@ export default class NexusHubPlugin extends Plugin {
 		}
 
 		// Find the goal this transaction's purchase is linked to
-		const targetGoal = this.settings.goals.find(goal =>
+		const targetGoal = (this.settings.goals || []).find(goal =>
 			goal.goalType === 'Debt' &&
 			!goal.completed && // Only check uncompleted goals
 			goal.linkedAccountIds.includes(paidTransaction.installmentOf!)
@@ -507,6 +546,12 @@ export default class NexusHubPlugin extends Plugin {
 	 * Ativa e foca na view de Relatórios.
 	 */
 	async activateReportView() {
+		// GAMIFICATION: Increment report view count
+		this.settings.reportViewCount = (this.settings.reportViewCount || 0) + 1;
+		await this.saveSettings();
+		// Check for drops immediately? optional.
+		this.dropSystem.checkForDrop({ id: 'report_view', description: 'Visualizar Relatório', amount: 0, date: moment().format('YYYY-MM-DD'), type: 'expense', category: 'System', status: 'paid', isRecurring: false, isInstallment: false });
+
 		this.app.workspace.detachLeavesOfType(NEXUS_REPORT_VIEW_TYPE);
 
 		await this.app.workspace.getLeaf(true).setViewState({

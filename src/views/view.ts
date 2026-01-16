@@ -23,7 +23,7 @@ import {
     ProfilePictureModal
 } from "../components/modals";
 // import { ConfirmationModal } from "../helpers/ui-helpers"; // Removed to avoid duplicate
-import { formatAsCurrency } from "../helpers/helpers";
+import { formatAsCurrency, calculateCardBill } from "../helpers/helpers";
 import { eventManager } from '../helpers/EventManager';
 import { Transaction, CreditCard } from "./settings";
 import { calculateLevel } from "../helpers/gamification-helpers";
@@ -599,6 +599,13 @@ export class NexusHubView extends ItemView {
 
             const newIcon = gridContainer.classList.contains('focus-mode-active') ? 'minimize' : 'maximize';
 
+            // GAMIFICATION: Track Full Screen usage
+            if (newIcon === 'minimize') { // Active
+                this.plugin.settings.fullScreenUsageCount = (this.plugin.settings.fullScreenUsageCount || 0) + 1;
+                this.plugin.saveSettings();
+                this.plugin.dropSystem.checkForDrop({ id: 'focus_mode', description: 'Modo Foco', amount: 0, date: moment().format('YYYY-MM-DD'), type: 'expense', category: 'System', status: 'paid', isRecurring: false, isInstallment: false });
+            }
+
             focusBtn.empty();
 
             setIcon(focusBtn, newIcon);
@@ -1109,10 +1116,14 @@ export class NexusHubView extends ItemView {
 
             let billGroup = billsToRender.get(billIdentifier);
             if (!billGroup) {
-                // Calculate Correct Due Date based on the VIEW MONTH
-                // User Logic: Expenses in Month N are due in Month N+1.
-                // So for the current view (Month N), the bill shown is the one due in N+1.
-                const dueDate = this.currentMonth.clone().add(1, 'month').date(card.dueDate);
+                // ✅ FIX: Usar calculateCardBill para obter a data de vencimento CORRETA
+                // A função já implementa a lógica: se vencimento < fechamento, vence no mês seguinte
+                const billData = calculateCardBill(
+                    (this.plugin as any).settings.transactions,
+                    card,
+                    this.currentMonth
+                );
+                const dueDate = billData.dueDate; // ✅ Data correta do helper
 
                 billGroup = { card: card, transactions: [], dueDate: dueDate };
                 billsToRender.set(billIdentifier, billGroup);

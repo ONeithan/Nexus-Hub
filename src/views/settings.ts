@@ -108,6 +108,12 @@ export interface NexusHubSettings {
     dataVersion?: number;
     onboardingComplete?: boolean;
     userName?: string;
+    // Gamification State (Real Counters)
+    reportViewCount: number;
+    firstAccessDate: string; // ISO Date
+    fullScreenUsageCount: number;
+
+    // Existing fields...
     nexusScore?: number;
     scoreHistory?: { date: string; points: number; reason: string; currentScore: number }[];
     achievements?: Achievement[];
@@ -171,6 +177,11 @@ export const DEFAULT_SETTINGS: NexusHubSettings = {
     notifiedTransactionIds: [],
     onboardingComplete: false,
     userName: '',
+    // Gamification State
+    reportViewCount: 0,
+    firstAccessDate: moment().toISOString(),
+    fullScreenUsageCount: 0,
+
     nexusScore: 0,
     profileBorderColor: undefined,
     profileBorderEffect: 'none',

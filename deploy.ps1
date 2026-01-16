@@ -1,4 +1,4 @@
-$DEST_DIR = "C:\Users\ONeithan\Documents\Obsidian teste ruins\testessss\.obsidian\plugins\nexus-hub"
+$DEST_DIR = "D:\Neithan\Documentos\Obsidian teste ruins\testessss\.obsidian\plugins\nexus-hub"
 
 if (!(Test-Path -Path $DEST_DIR)) {
     New-Item -ItemType Directory -Force -Path $DEST_DIR

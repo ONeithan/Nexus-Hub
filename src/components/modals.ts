@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { Transaction, Goal, CreditCard, Category, NexusHubSettings, DEFAULT_SETTINGS } from '../views/settings';
 import type NexusHubPlugin from '../main';
-import { formatAsCurrency, calculateCardBill, suggestCategory, parseCurrency } from '../helpers/helpers';
+import { formatAsCurrency, calculateCardBill, suggestCategory, parseCurrency, calculatePaymentMonth } from '../helpers/helpers';
 import { eventManager } from '../helpers/EventManager';
 import { setupCurrencyInput, renderCategoryDropdown, ConfirmationModal, PromptModal, InfoModal } from '../helpers/ui-helpers';
 export { ConfirmationModal, PromptModal };
@@ -689,10 +689,10 @@ export class CreateEditGoalModal extends Modal {
             };
 
             // Wire up inputs
-            // Updated: Changing Total Value triggers auto-calc (to sync Paid Amount based on Date)
+            // Updated: Changing Total Value NO LONGER triggers auto-calc automatically
             setupCurrencyInput(manualValueInput, val => {
                 this.totalValue = val;
-                autoCalcPaidFromDate();
+                updateDebtCalc(); // Apenas atualiza o cálculo visual, não sobrescreve parcelas pagas
             }, this.totalValue, 'Ex: R$ 1.500,00');
 
             // Manual Paid Override
@@ -701,10 +701,10 @@ export class CreateEditGoalModal extends Modal {
                 updateDebtCalc();
             }, this.manualCurrentAmount, 'Ex: R$ 500,00');
 
-            // Updated: Changing Installments triggers auto-calc (re-check date loop range & monthly val)
+            // Updated: Changing Installments NO LONGER triggers auto-calc automatically
             installmentsInput.onChange(val => {
                 this.debtInstallmentCount = parseInt(val) || 1;
-                autoCalcPaidFromDate();
+                updateDebtCalc(); // Apenas atualiza o cálculo visual
             });
 
             paidInstInput.onChange(val => {
@@ -713,17 +713,29 @@ export class CreateEditGoalModal extends Modal {
                 const monthly = (this.totalValue || 0) / count;
                 this.manualCurrentAmount = pCount * monthly;
                 // Update currency input (formatted)
-                manualPaidInput.setValue(formatAsCurrency(this.manualCurrentAmount).replace('R$ ', ''));
+                manualPaidInput.setValue(formatAsCurrency(this.manualCurrentAmount).replace('R$ ', ''));
                 updateDebtCalc();
             });
 
             loanDateInput.onChange(val => {
                 this.debtStartDate = val;
-                autoCalcPaidFromDate();
+                // NÃO chama autoCalcPaidFromDate() automaticamente
             });
 
-            // Initial Calc
-            autoCalcPaidFromDate();
+            // Botão manual para calcular parcelas pagas pela data
+            const autoCalcSetting = new Setting(formContainer)
+                .setName('Calcular parcelas pagas automaticamente')
+                .setDesc('Calcula quantas parcelas deveriam estar pagas com base na data de início da dívida')
+                .addButton(btn => btn
+                    .setButtonText('Calcular pela Data')
+                    .setIcon('calculator')
+                    .onClick(() => {
+                        autoCalcPaidFromDate(); // ✅ Apenas quando usuário pedir
+                        new Notice('Parcelas pagas calculadas automaticamente!');
+                    })
+                );
+
+            // Initial Calc - APENAS updateDebtCalc, NÃO autoCalcPaidFromDate
             updateDebtCalc();
 
 
@@ -1017,6 +1029,9 @@ export class OnboardingModal extends Modal {
             // Award achievements
             await unlockAchievement('set_user_name');
             await unlockAchievement('first_income');
+
+            // Check for card drops (e.g. Ledger card for setup completion)
+            // Cards will be checked when user marks transactions as paid
 
             eventManager.emit('data-changed');
             if (this.onSubmit) this.onSubmit();
@@ -2517,6 +2532,7 @@ export class AddTransactionModal extends Modal {
         const txIndex = this.plugin.settings.transactions.findIndex(t => t.id === this.transaction!.id);
         if (txIndex > -1) {
             this.plugin.settings.transactions[txIndex].status = 'paid';
+            this.plugin.dropSystem.checkForDrop(this.plugin.settings.transactions[txIndex]); // Verificar cartas ao pagar
         }
 
         // 2. Delete ALL FUTURE transactions of this series
@@ -2725,13 +2741,197 @@ export class AddPurchaseModal extends Modal {
     }
 }
 export class AccountDetailModal extends Modal {
-    constructor(app: App, plugin: NexusHubPlugin, accountId: string, isInstallment: boolean) { super(app); }
-    onOpen() { this.close(); }
+    plugin: NexusHubPlugin;
+    groupKey: string; // installmentOf ID ou description da recorrência
+    isInstallment: boolean;
+
+    constructor(app: App, plugin: NexusHubPlugin, groupKey: string, isInstallment: boolean) {
+        super(app);
+        this.plugin = plugin;
+        this.groupKey = groupKey;
+        this.isInstallment = isInstallment;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass('nexus-fintech-modal');
+
+        // Buscar todas as transações do grupo
+        const transactions = this.plugin.settings.transactions.filter(t => {
+            if (this.isInstallment) {
+                return t.installmentOf === this.groupKey;
+            } else {
+                return t.isRecurring && t.description === this.groupKey;
+            }
+        });
+
+        // Ordenar por data
+        transactions.sort((a, b) => moment(a.date).diff(moment(b.date)));
+
+        if (transactions.length === 0) {
+            contentEl.createEl('p', { text: 'Nenhuma transação encontrada.' });
+            new Setting(contentEl)
+                .addButton(btn => btn.setButtonText('Fechar').onClick(() => this.close()));
+            return;
+        }
+
+        // Renderizar header
+        const title = this.isInstallment
+            ? `Parcelas de ${transactions[0]?.description || 'Compra'}`
+            : `Histórico de ${this.groupKey}`;
+        contentEl.createEl('h2', { text: title });
+
+        // Informações gerais
+        const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+        const paidCount = transactions.filter(tx => tx.status === 'paid').length;
+
+        const summaryEl = contentEl.createDiv({ cls: 'account-detail-summary' });
+        summaryEl.createEl('p', { text: `Total: ${formatAsCurrency(totalAmount)}` });
+        summaryEl.createEl('p', { text: `${paidCount} de ${transactions.length} ${this.isInstallment ? 'parcelas pagas' : 'ocorrências pagas'}` });
+
+        // Container para lista de transações
+        const listContainer = contentEl.createDiv({ cls: 'account-detail-list' });
+
+        // Renderizar cada transação
+        transactions.forEach((tx, index) => {
+            const itemEl = listContainer.createDiv({ cls: 'account-detail-item' });
+            itemEl.toggleClass('is-paid', tx.status === 'paid');
+
+            // Checkbox de status
+            const leftPanel = itemEl.createDiv({ cls: 'item-left' });
+            const checkbox = leftPanel.createEl('input', { type: 'checkbox' });
+            checkbox.checked = tx.status === 'paid';
+            checkbox.addEventListener('change', async () => {
+                const transactionInSettings = this.plugin.settings.transactions.find(t => t.id === tx.id);
+                if (transactionInSettings) {
+                    transactionInSettings.status = checkbox.checked ? 'paid' : 'pending';
+                    await this.plugin.saveSettings();
+
+                    // Verificar cartas/conquistas ao pagar
+                    if (checkbox.checked) {
+                        // Cards will be checked when user marks transaction as paid
+                    }
+
+                    eventManager.emit('data-changed', this.plugin.settings);
+                    // Atualizar visual
+                    itemEl.toggleClass('is-paid', checkbox.checked);
+                    // Atualizar contador
+                    const newPaidCount = transactions.filter(t => t.status === 'paid').length;
+                    summaryEl.querySelector('p:last-child')?.setText(`${newPaidCount} de ${transactions.length} ${this.isInstallment ? 'parcelas pagas' : 'ocorrências pagas'}`);
+                }
+            });
+
+            // Info da parcela/ocorrência
+            const infoEl = itemEl.createDiv({ cls: 'item-info' });
+            const labelEl = infoEl.createDiv({ cls: 'item-label' });
+            if (this.isInstallment) {
+                labelEl.setText(`Parcela ${tx.currentInstallment}/${tx.totalInstallments}`);
+            } else {
+                labelEl.setText(`#${index + 1}`);
+            }
+
+            const dateEl = infoEl.createDiv({ cls: 'item-date' });
+            dateEl.setText(`Vence: ${moment(tx.date).format('DD/MM/YYYY')}`);
+
+            // Valor
+            const rightPanel = itemEl.createDiv({ cls: 'item-right' });
+            rightPanel.createSpan({ text: formatAsCurrency(tx.amount), cls: 'item-amount' });
+        });
+
+        // Estilo inline para o modal
+        const styleEl = contentEl.createEl('style');
+        styleEl.innerHTML = `
+            .account-detail-summary {
+                background-color: #1A1A1A;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+            }
+            .account-detail-summary p {
+                margin: 5px 0;
+                font-size: 0.95rem;
+            }
+            .account-detail-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                max-height: 400px;
+                overflow-y: auto;
+                margin-bottom: 15px;
+            }
+            .account-detail-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background-color: #1A1A1A;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #333;
+                transition: all 0.2s;
+            }
+            .account-detail-item.is-paid {
+                opacity: 0.6;
+                background-color: #0f1f0f;
+            }
+            .account-detail-item .item-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .account-detail-item .item-info {
+                flex: 1;
+            }
+            .account-detail-item .item-label {
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+            .account-detail-item .item-date {
+                font-size: 0.8rem;
+                color: #888;
+                margin-top: 2px;
+            }
+            .account-detail-item .item-amount {
+                font-weight: 600;
+                font-size: 1rem;
+            }
+        `;
+
+        // Botão de fechar
+        new Setting(contentEl)
+            .addButton(btn => btn.setButtonText('Fechar').onClick(() => this.close()));
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
-export class EditAccountModal extends Modal {
-    constructor(app: App, plugin: NexusHubPlugin, transaction: Transaction, onSubmit: () => void) { super(app); }
-    onOpen() { this.close(); }
+export class EditTransactionModal extends Modal {
+    plugin: NexusHubPlugin;
+    transaction: Transaction;
+    onSubmit: () => void;
+
+    constructor(app: App, plugin: NexusHubPlugin, transaction: Transaction, onSubmit: () => void) {
+        super(app);
+        this.plugin = plugin;
+        this.transaction = transaction;
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        // Delegar para AddTransactionModal em modo de edição
+        // AddTransactionModal já tem toda a lógica de edição implementada
+        this.close();
+        new AddTransactionModal(
+            this.app,
+            this.plugin,
+            moment(this.transaction.date),
+            this.onSubmit,
+            this.transaction // Passa a transação para editar
+        ).open();
+    }
 }
 
 export class CardBillDetailModal extends Modal {
@@ -2827,8 +3027,10 @@ export class CardBillDetailModal extends Modal {
                 editBtn.setAttr('title', 'Editar');
                 editBtn.onClickEvent((e) => {
                     e.stopPropagation();
-                    new EditAccountModal(this.app, this.plugin, t, () => this.onOpen()).open();
+                    new EditTransactionModal(this.app, this.plugin, t, () => this.onOpen()).open();
                 });
+
+
 
                 // Delete Button
                 const deleteBtn = actions.createEl('button', { cls: 'action-btn-icon' });
@@ -2935,18 +3137,8 @@ export class CardBillDetailModal extends Modal {
                     return;
                 }
 
-                // Helper to calculate Payment Month based on Closing Day
-                const getPaymentMonth = (txDate: string, cardId: string) => {
-                    const card = this.plugin.settings.creditCards.find((c: any) => c.id === cardId);
-                    if (!card) return moment(txDate).format('YYYY-MM');
-
-                    const d = moment(txDate);
-                    // If purchase day >= closing day, it goes to next month
-                    if (d.date() >= card.closingDay) {
-                        return d.add(1, 'month').format('YYYY-MM');
-                    }
-                    return d.format('YYYY-MM');
-                };
+                // ✅ Usar função global calculatePaymentMonth refinada
+                // Ela já implementa a lógica correta de cartão + regra de fluxo de caixa
 
                 // If installment, we generate multiple transactions
                 if (isInstallment && installments > 1) {
@@ -2955,7 +3147,11 @@ export class CardBillDetailModal extends Modal {
 
                     for (let i = 0; i < installments; i++) {
                         const tDate = baseDate.clone().add(i, 'months');
-                        const pMonth = getPaymentMonth(tDate.format('YYYY-MM-DD'), this.cardId);
+                        const pMonth = calculatePaymentMonth(
+                            tDate.format('YYYY-MM-DD'),
+                            this.cardId,
+                            this.plugin.settings.creditCards
+                        );
 
                         const newTx: Transaction = {
                             id: uuidv4(),
@@ -2973,10 +3169,15 @@ export class CardBillDetailModal extends Modal {
                             installmentNumber: i + 1
                         };
                         this.plugin.settings.transactions.push(newTx);
+                        // Cards will be checked when user marks transaction as paid
                     }
                 } else {
                     // Single transaction
-                    const pMonth = getPaymentMonth(date, this.cardId);
+                    const pMonth = calculatePaymentMonth(
+                        date,
+                        this.cardId,
+                        this.plugin.settings.creditCards
+                    );
 
                     const newTx: Transaction = {
                         id: uuidv4(),
@@ -3580,11 +3781,6 @@ export class EmergencyFundModal extends Modal {
 
     onClose() {
         this.contentEl.empty();
-    }
-}
-export class EditTransactionModal extends AddTransactionModal {
-    constructor(app: App, plugin: NexusHubPlugin, transaction: Transaction, onSubmit: () => void) {
-        super(app, plugin, moment(transaction.date), onSubmit, transaction);
     }
 }
 export class UpdateSalaryModal extends Modal { constructor(app: App, plugin: NexusHubPlugin) { super(app); } onOpen() { this.close(); } }

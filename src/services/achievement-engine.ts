@@ -53,7 +53,8 @@ function checkVolumeAchievements(settings: NexusHubSettings) {
     const validTx = getValidTransactions(settings);
     // Exclude 'Salário' transactions from volume count (user "activity" count)
     // This prevents the user from getting "First Register" just by setting up their salary.
-    const activityTx = validTx.filter(t => t.category !== 'Salário');
+    // CRITICAL: Only count PAID transactions
+    const activityTx = validTx.filter(t => t.category !== 'Salário' && t.status === 'paid');
     const txCount = activityTx.length;
     // console.log(`[Nexus Hub Debug] Volume Check (Valid): TxCount=${txCount}`);
 
@@ -66,9 +67,9 @@ function checkVolumeAchievements(settings: NexusHubSettings) {
 function checkWealthAchievements(settings: NexusHubSettings) {
     const validTx = getValidTransactions(settings);
 
-    // Net Worth = (Income - Expense)
-    const totalIncome = validTx.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = validTx.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    // Net Worth = (Income - Expense) - ONLY PAID
+    const totalIncome = validTx.filter(t => t.type === 'income' && t.status === 'paid').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = validTx.filter(t => t.type === 'expense' && t.status === 'paid').reduce((sum, t) => sum + t.amount, 0);
     const netWorth = totalIncome - totalExpense;
 
     // console.log(`[Nexus Hub Debug] Wealth Check (Valid): Income=${totalIncome}, Expense=${totalExpense}, NetWorth=${netWorth}, TxCount=${validTx.length}`);
@@ -87,7 +88,7 @@ function checkCategoryAchievements(settings: NexusHubSettings) {
     const categories = settings.categories || [];
     const catMap = new Map<string, { count: number, value: number }>();
 
-    validTx.filter(t => t.type === 'expense').forEach(t => {
+    validTx.filter(t => t.type === 'expense' && t.status === 'paid').forEach(t => {
         const cat = categories.find(c => c.name === t.category);
         if (!cat) return;
 
