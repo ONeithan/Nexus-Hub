@@ -38,6 +38,19 @@ textarea:focus {
     gap: 25px;
     height: 100%;
     padding: 0 15px 15px;
+
+    /* DEFENSIVE CSS SHIELD */
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll triggers */
+    width: 100%;
+}
+
+/* Universal Box Sizing for Plugin Scope */
+.nexus-hub-view *,
+.nexus-hub-view *::before,
+.nexus-hub-view *::after {
     box-sizing: border-box;
 }
 
@@ -45,6 +58,9 @@ textarea:focus {
     background-color: var(--background-secondary);
     border-radius: 12px;
     padding: 20px;
+    /* Defensive Inner Protection */
+    max-width: 100%;
+    overflow-wrap: break-word;
 }
 
 /* Atribuição das áreas */
