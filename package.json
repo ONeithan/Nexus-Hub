@@ -1,6 +1,6 @@
 {
 	"name": "nexus-hub",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Uma central de controle financeiro com interface gráfica para o Obsidian.",
 	"main": "main.js",
 	"scripts": {

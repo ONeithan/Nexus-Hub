@@ -3,13 +3,28 @@
 
 **Transforme sua gestão financeira em uma jornada épica no Obsidian.**
 
-> ⚠️ **Avisos Importantes:**
-> - **Exclusivo para Desktop:** Este plugin **NÃO** funciona em dispositivos móveis (Celular, Tablet, iPad) no momento. O suporte mobile está em desenvolvimento.
-> - **Idioma:** O plugin está disponível apenas em **Português (PT-BR)**. O suporte para inglês será adicionado futuramente.
-
 O **Nexus Hub** não é apenas um plugin de finanças; é um sistema completo de gestão de patrimônio gamificado. Ele transforma o ato de controlar despesas, receitas e investimentos em um RPG pessoal, onde cada centavo economizado te aproxima do próximo nível.
 
 ---
+
+## 📱 Suporte Mobile (Novo na v1.0.1)
+
+O Nexus Hub agora é **totalmente compatível** com celulares e tablets iOS/Android!
+A interface foi reconstruída para ser responsiva, com navegação otimizada e interações por toque.
+
+| Dashboard Mobile | Menu de Navegação |
+| :---: | :---: |
+| ![Dashboard](assets/screenshots/mobile-dashboard.png) | ![Menu](assets/screenshots/mobile-menu.png) |
+
+| Gestão Rápida | Relatórios KPI | Relatórios Gráficos |
+| :---: | :---: | :---: |
+| ![Transações](assets/screenshots/mobile-transactions.png) | ![KPI](assets/screenshots/mobile-reports-kpi.png) | ![Gráficos](assets/screenshots/mobile-reports-charts.png) |
+
+> **Dica:** Segure o dedo sobre uma carta na coleção para ver o efeito holográfico especial!
+
+---
+
+
 
 ## ✨ Destaques & Funcionalidades
 
