@@ -230,6 +230,35 @@ export class NexusHubView extends ItemView {
                 font-size: 1.1em;
             }
 
+
+            /* --- NUCLEAR GRID RESET FOR MOBILE (A54 FIX) --- */
+            /* This overrides the 280px sidebar grid template */
+            .nexus-hub-mobile.nexus-hub-grid-container {
+                display: flex !important;
+                flex-direction: column !important;
+                padding: 10px !important;
+                height: auto !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto !important;
+                gap: 15px !important;
+            }
+            
+            .nexus-hub-mobile .grid-area {
+                width: 100% !important;
+                padding: 15px !important;
+                margin-bottom: 0px !important;
+                box-sizing: border-box !important;
+                height: auto !important;
+            }
+
+            .nexus-hub-mobile .grid-header,
+            .nexus-hub-mobile .grid-summary,
+            .nexus-hub-mobile .grid-actions,
+            .nexus-hub-mobile .grid-main-content {
+                grid-area: auto !important;
+            }
+            /* ----------------------------------------------- */
+
             /* --- BETTER TRANSACTION LIST --- */
             /* Apply this style if it's mobile OR if screen is small (fallback) */
             .nexus-hub-mobile .nexus-hub-account-item,
