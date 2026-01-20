@@ -111,21 +111,21 @@ export class PackOpeningModal extends Modal {
                 position: relative;
             }
 
-            /* Custom Minimalist Close Button */
+            /* Custom Minimalist Close Button - FIXED FOR MOBILE */
             .custom-close-btn {
                 position: absolute;
-                top: -15px;
-                right: -40px; 
-                width: 30px; height: 30px;
+                top: 10px;
+                right: 10px; 
+                width: 36px; height: 36px;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.2);
+                background: rgba(0, 0, 0, 0.5); /* Easier to see */
                 border: 1px solid rgba(255, 255, 255, 0.4);
                 color: #fff;
                 display: flex; align-items: center; justify-content: center;
                 cursor: pointer;
                 opacity: 0;
                 transition: opacity 1s ease 2s; 
-                z-index: 20;
+                z-index: 100; /* Ensure on top */
             }
             .custom-close-btn:hover { background: rgba(255, 255, 255, 0.4); }
             .custom-close-btn svg { width: 16px; height: 16px; }

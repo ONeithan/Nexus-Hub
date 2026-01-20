@@ -1,4 +1,4 @@
-import { moment, ItemView, WorkspaceLeaf, Notice, setIcon, App, Modal, Setting, ButtonComponent, Menu } from "obsidian";
+import { moment, ItemView, WorkspaceLeaf, Notice, setIcon, App, Modal, Setting, ButtonComponent, Menu, Platform } from "obsidian";
 import { generateSavingOpportunities } from "../services/virtual-transaction-generator";
 import { PromptModal } from "../components/modals";
 
@@ -177,6 +177,7 @@ export class NexusHubView extends ItemView {
                 100% { box-shadow: 0 0 20px var(--profile-border-glow), 0 0 5px var(--profile-border-color); }
             }
 
+
             .level-pill-badge {
                 position: absolute;
                 bottom: -8px;
@@ -195,49 +196,202 @@ export class NexusHubView extends ItemView {
                 letter-spacing: 1px;
                 white-space: nowrap;
                 transition: all 0.3s ease;
+
+
+            /* --- CRITICAL: MOBILE CLASS BASED STYLING (NO MEDIA QUERIES) --- */
+            
+            /* Mobile: Styling Only, Logic handled by JS */
+            .nexus-hub-mobile .grid-actions .actions-content {
+                /* Removed forced display none, using JS inline style instead */
+                margin-top: 10px;
+                padding-top: 10px;
+                border-top: 1px solid var(--background-modifier-border);
             }
+
+            /* Show when expanded - handled by JS inline style now, just keeping animation */
+            .nexus-hub-mobile .grid-actions .actions-content {
+                 animation: slideDown 0.2s ease-out;
+            }
+
+            /* Mobile Actions Header Styling */
+            .mobile-actions-header {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px;
+                background-color: var(--background-secondary); 
+                border-radius: 8px;
+                cursor: pointer;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-actions-header h2 {
+                margin: 0 !important;
+                font-size: 1.1em;
+            }
+
+            /* --- BETTER TRANSACTION LIST --- */
+            /* Apply this style if it's mobile OR if screen is small (fallback) */
+            .nexus-hub-mobile .nexus-hub-account-item,
+            @media screen and (max-width: 768px) {
+                .nexus-hub-account-item {
+                    background-color: var(--background-primary);
+                    border: 1px solid var(--background-modifier-border);
+                    border-radius: 12px;
+                    margin-bottom: 12px;
+                    padding: 16px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                    flex-direction: row; 
+                    align-items: center;
+                }
+            }
+
+            .nexus-hub-mobile .account-name,
+             @media screen and (max-width: 768px) { .account-name { font-size: 1.1em; font-weight: 600; } }
+            
+
+            .nexus-hub-mobile .account-item-icon,
+             @media screen and (max-width: 768px) { .account-item-icon { width: 32px; height: 32px; background: var(--background-modifier-hover); border-radius: 50%; padding: 6px; } }
+            
+            /* FIX SQUASHED LIST - MAKE IT HUGE */
+            .nexus-hub-mobile .grid-main-content,
+             @media screen and (max-width: 768px) { 
+                .grid-main-content { 
+                    min-height: 70vh !important; /* Take up 70% of viewport height at least */
+                    padding-bottom: 80px; 
+                    display: flex;
+                    flex-direction: column;
+                } 
+                .accounts-list-container {
+                    flex: 1; /* Grow to fill space */
+                    display: flex;
+                    flex-direction: column;
+                }
+            }
+            
+            /* NAV BUTTON STYLE FOR MOBILE - HIGH CONTRAST */
+            .nexus-hub-mobile .nav-item {
+                border: 1px solid var(--background-modifier-border-hover) !important;
+                background-color: var(--background-secondary) !important; /* Distinct from main background */
+                padding: 16px !important;
+                margin-bottom: 12px !important;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                font-weight: 600;
+                display: flex !important;
+                align-items: center;
+                gap: 15px;
+            }
+            .nexus-hub-mobile .nav-item:active {
+                background-color: var(--interactive-accent) !important;
+                color: var(--text-on-accent) !important;
+                transform: scale(0.98);
+            }
+            .nexus-hub-mobile .nav-item-icon {
+                 /* Make icons pop too */
+                 color: var(--text-normal);
+            }
+            .nexus-hub-mobile .nav-item:active {
+                background-color: var(--background-modifier-hover);
+                transform: scale(0.98);
+            }
+
+            /* Ensure FAB is visible fix - SCOPED TO MOBILE CLASS */
+            .nexus-hub-mobile .mobile-fab-add-transaction {
+                display: flex !important;
+                position: fixed;
+                bottom: 25px;
+                right: 25px;
+                width: 56px;
+                height: 56px;
+                background-color: var(--interactive-accent);
+                color: white;
+                border-radius: 50%;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 9999; /* Higher z-index just in case */
+                cursor: pointer;
+            }
+             .nexus-hub-mobile .mobile-fab-add-transaction svg {
+                width: 30px;
+                height: 30px;
+             }
+             
+            /* --- MODAL INPUT FIX (REMOVE UGLY DARK BG) --- */
+            .modal-content input[type="text"],
+            .modal-content input[type="number"],
+            .modal-content select {
+               background-color: var(--background-modifier-form-field) !important;
+               border: 1px solid var(--background-modifier-border) !important;
+               color: var(--text-normal) !important;
+            }
+             .modal-content input[type="text"]:focus,
+            .modal-content input[type="number"]:focus,
+            .modal-content select:focus {
+               border-color: var(--interactive-accent) !important;
+               box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+            }
+
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+
+            
+            /* --- CRITICAL: PARANOID MOBILE HIDING (Desktop) --- */
+            .mobile-fab-add-transaction,
+            .mobile-actions-header {
+                display: none !important;
+            }
+            /* -------------------------------------- */
         `;
     }
 
     async onOpen() {
-
-        // new Notice('Se você encontrar algum problema, tente recarregar o plugin (Ctrl+R).');
-
-        const { contentEl } = this;
-
-        contentEl.empty();
-
         this.containerEl.addClass('nexus-hub-view');
-
-
-
         this.injectStyles();
 
+        // Add Actions ONLY ONCE
+        if (this.app.workspace.activeLeaf === this.leaf) {
+            // Basic check, though addAction usually handles duplication if we don't clear? 
+            // Actually, NexusHubView instance persists.
+            // We should clear actions first? No API for that.
+            // But since onOpen is called only on INIT usually, the issue is that we were calling it manually.
+            // Converting manual calls to 'refreshDashboard()' will solve it.
+        }
 
-
+        // This action should strictly stay here and NOT be in the refresh loop
         this.addAction(
-
             'settings',
-
             'Abrir configurações',
-
             () => {
-
                 (this.app as AppWithSettings).setting.open();
-
                 (this.app as AppWithSettings).setting.openTabById((this.plugin as any).manifest.id);
-
             }
-
         );
 
+        await this.refreshDashboard();
+    }
 
+    async refreshDashboard() {
+        const { contentEl } = this;
+        contentEl.empty();
+
+        // ... (Rest of the previous onOpen logic starts here)
 
         const gridContainer = contentEl.createDiv({ cls: 'nexus-hub-grid-container' });
+
+        // CRITICAL: MOBILE CLASS INJECTION
+        if (Platform.isMobile) {
+            gridContainer.addClass('nexus-hub-mobile');
+        }
 
 
 
         const headerEl = gridContainer.createDiv({ cls: 'grid-area grid-header' });
+
 
         const headerContainer = headerEl.createDiv({ cls: 'header-container' });
 
@@ -379,40 +533,111 @@ export class NexusHubView extends ItemView {
 
 
 
+
         const actionsEl = gridContainer.createDiv({ cls: 'grid-area grid-actions' });
 
-        actionsEl.createEl('h2', { text: 'Gerenciamento' });
+        // Mobile Toggle for Actions - HARD PLATFORM CHECK
+        // If this is Desktop, these elements will NEVER exist in the DOM.
+        // This is the ultimate fix for the "Leakage".
+        let mobileActionsHeader: HTMLElement | null = null;
+        let mobileToggleIcon: HTMLElement | null = null;
+
+        if (Platform.isMobile) {
+            mobileActionsHeader = actionsEl.createDiv({ cls: 'mobile-actions-header' });
+            mobileActionsHeader.createEl('h2', { text: 'Gerenciamento' });
+            mobileToggleIcon = mobileActionsHeader.createDiv({ cls: 'mobile-toggle-icon' });
+            setIcon(mobileToggleIcon, 'chevron-right'); // Start as collapsed icon
+        }
+
+        const actionsContent = actionsEl.createDiv({ cls: 'actions-content' });
+
+        // CRITICAL: JS-BASED MOBILE TOGGLE LOGIC (CSS FREE)
+        if (Platform.isMobile && mobileActionsHeader) {
+            // 1. Force Hide Initially
+            actionsContent.style.display = 'none';
+
+            // 2. Attach Listener
+            mobileActionsHeader.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isHidden = actionsContent.style.display === 'none';
+
+                if (isHidden) {
+                    // Show
+                    actionsContent.style.display = 'flex';
+                    actionsContent.style.flexDirection = 'column';
+                    actionsContent.style.gap = '10px';
+                    if (mobileToggleIcon) { mobileToggleIcon.empty(); setIcon(mobileToggleIcon, 'chevron-down'); }
+                } else {
+                    // Hide
+                    actionsContent.style.display = 'none';
+                    if (mobileToggleIcon) { mobileToggleIcon.empty(); setIcon(mobileToggleIcon, 'chevron-right'); }
+                }
+            });
+        }
 
 
+        // On Mobile, content is hidden by default (handled by CSS .nexus-hub-mobile .actions-content { display: none })
+        // On Desktop, it's visible.
 
-        const addTransactionBtn = actionsEl.createEl('button', { cls: 'nexus-hub-button-primary' });
+        const addTransactionBtn = actionsContent.createEl('button', { cls: 'nexus-hub-button-primary' });
+
+        // Ensure "Add Transaction" gets the Mobile Card treatment too
+        if (Platform.isMobile) {
+            addTransactionBtn.style.width = '100%';
+            addTransactionBtn.style.padding = '16px';
+            addTransactionBtn.style.borderRadius = '12px';
+            addTransactionBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)'; // Slightly stronger shadow
+            addTransactionBtn.style.fontWeight = '700';
+            addTransactionBtn.style.fontSize = '1.1em';
+            addTransactionBtn.style.marginBottom = '20px'; // Extra space below
+            addTransactionBtn.style.marginTop = '10px';
+            addTransactionBtn.style.border = 'none';
+            // Maintain primary color but enforce it inline
+            addTransactionBtn.style.backgroundColor = 'var(--interactive-accent)';
+            addTransactionBtn.style.color = 'var(--text-on-accent)';
+        }
 
         addTransactionBtn.setText('Adicionar Transação');
 
-        addTransactionBtn
+        addTransactionBtn.addEventListener('click', () => new AddTransactionModal(this.app, this.plugin, this.currentMonth, () => this.updateDashboardCalculations()).open());
 
-            .addEventListener('click', () => new AddTransactionModal(this.app, this.plugin, this.currentMonth, () => this.updateDashboardCalculations()).open());
+        // REMOVED FAB AS REQUESTED
 
+        actionsContent.createEl('hr');
 
+        const navContainer = actionsContent.createDiv({ cls: 'nav-container' });
 
-        actionsEl.createEl('hr');
-
-
-
-        const navContainer = actionsEl.createDiv({ cls: 'nav-container' });
+        // Helper to force mobile styles immediately
+        const applyMobileNavStyle = (el: HTMLElement) => {
+            if (Platform.isMobile) {
+                el.style.border = '1px solid var(--background-modifier-border-hover)';
+                el.style.backgroundColor = 'var(--background-secondary)';
+                el.style.padding = '16px';
+                el.style.marginBottom = '12px';
+                el.style.borderRadius = '12px';
+                el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.gap = '15px';
+                el.style.fontWeight = '600';
+            }
+        };
 
         const budgetBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(budgetBtn);
         setIcon(budgetBtn.createDiv({ cls: 'nav-item-icon' }), 'target');
-
         budgetBtn.createDiv({ cls: 'nav-item-label', text: 'Orçamentos' });
 
         budgetBtn.addEventListener('click', () => new ManageBudgetsModal(this.app, this.plugin).open());
 
 
 
-        const categoriesBtn = navContainer.createDiv({ cls: 'nav-item' });
 
+
+        const categoriesBtn = navContainer.createDiv({ cls: 'nav-item' });
+        applyMobileNavStyle(categoriesBtn);
         setIcon(categoriesBtn.createDiv({ cls: 'nav-item-icon' }), 'tag');
 
         categoriesBtn.createDiv({ cls: 'nav-item-label', text: 'Categorias' });
@@ -422,17 +647,17 @@ export class NexusHubView extends ItemView {
 
 
         const extraIncomeBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(extraIncomeBtn);
         setIcon(extraIncomeBtn.createDiv({ cls: 'nav-item-icon' }), 'plus-circle');
 
         extraIncomeBtn.createDiv({ cls: 'nav-item-label', text: 'Renda Extra' });
 
-        extraIncomeBtn.addEventListener('click', () => new ManageExtraIncomeModal(this.app, this.plugin, () => this.onOpen()).open());
+        extraIncomeBtn.addEventListener('click', () => new ManageExtraIncomeModal(this.app, this.plugin, () => this.refreshDashboard()).open());
 
 
 
         const goalsBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(goalsBtn);
         setIcon(goalsBtn.createDiv({ cls: 'nav-item-icon' }), 'flag');
 
         goalsBtn.createDiv({ cls: 'nav-item-label', text: 'Metas' });
@@ -442,7 +667,7 @@ export class NexusHubView extends ItemView {
 
 
         const futureLedgerBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(futureLedgerBtn);
         setIcon(futureLedgerBtn.createDiv({ cls: 'nav-item-icon' }), 'calendar-clock');
 
         futureLedgerBtn.createDiv({ cls: 'nav-item-label', text: 'Lançamentos Futuros' });
@@ -452,7 +677,7 @@ export class NexusHubView extends ItemView {
 
 
         const cardsBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(cardsBtn);
         setIcon(cardsBtn.createDiv({ cls: 'nav-item-icon' }), 'credit-card');
 
         cardsBtn.createDiv({ cls: 'nav-item-label', text: 'Cartões' });
@@ -462,7 +687,7 @@ export class NexusHubView extends ItemView {
 
 
         const emergencyBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(emergencyBtn);
         setIcon(emergencyBtn.createDiv({ cls: 'nav-item-icon' }), 'shield');
 
         emergencyBtn.createDiv({ cls: 'nav-item-label', text: 'Fundo de Emergência' });
@@ -472,7 +697,7 @@ export class NexusHubView extends ItemView {
 
 
         const reportsBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(reportsBtn);
         setIcon(reportsBtn.createDiv({ cls: 'nav-item-icon' }), 'pie-chart');
 
         reportsBtn.createDiv({ cls: 'nav-item-label', text: 'Relatórios' });
@@ -482,7 +707,7 @@ export class NexusHubView extends ItemView {
 
 
         const achievementsBtn = navContainer.createDiv({ cls: 'nav-item' });
-
+        applyMobileNavStyle(achievementsBtn);
         setIcon(achievementsBtn.createDiv({ cls: 'nav-item-icon' }), 'award');
 
         achievementsBtn.createDiv({ cls: 'nav-item-label', text: 'Conquistas' });
@@ -500,6 +725,13 @@ export class NexusHubView extends ItemView {
 
 
         const mainEl = gridContainer.createDiv({ cls: 'grid-area grid-main-content' });
+
+        // Fix for "Squashed List" on Mobile - INLINE STYLE
+        if (Platform.isMobile) {
+            mainEl.style.minHeight = '75vh'; // Force it to be huge
+            mainEl.style.display = 'flex';
+            mainEl.style.flexDirection = 'column';
+        }
 
         mainEl.createEl('h2', { text: 'Transações do Mês' });
 
@@ -805,20 +1037,33 @@ export class NexusHubView extends ItemView {
         if (transaction.type !== 'income') {
             const checkbox = leftPanel.createEl('input', { type: 'checkbox' });
             checkbox.checked = transaction.status === 'paid';
-            checkbox.addEventListener('change', async () => {
+            checkbox.addEventListener('change', async (e) => {
+                e.stopPropagation(); // Prevent row click from interfering
+
                 const transactionInSettings = (this.plugin as any).settings.transactions.find((tx: any) => tx.id === transaction.id);
                 if (transactionInSettings) {
                     const newStatus = checkbox.checked ? 'paid' : 'pending';
-                    if (transactionInSettings.status === newStatus) return;
 
+                    // Apply visual feedback immediately
+                    if (newStatus === 'paid') {
+                        itemEl.addClass('is-paid');
+                    } else {
+                        itemEl.removeClass('is-paid');
+                    }
+
+                    // Update data
                     transactionInSettings.status = newStatus;
+                    transaction.status = newStatus; // Update the local transaction object too
 
                     if (newStatus === 'paid') {
                         await (this.plugin as any).handlePayment(transactionInSettings);
                     } else {
                         await (this.plugin as any).saveSettings();
-                        eventManager.emit('data-changed');
+                        eventManager.emit('data-changed'); // This will trigger a full re-render
                     }
+                    // Re-calculate dashboard. This will also trigger a re-render,
+                    // so the immediate visual feedback might be overwritten, which is fine.
+                    this.updateDashboardCalculations();
                 }
             });
         }
@@ -1037,7 +1282,7 @@ export class NexusHubView extends ItemView {
         });
 
         const nameContainer = leftPanel.createDiv({ cls: 'account-name is-clickable' });
-        nameContainer.addEventListener('click', () => new CardBillDetailModal(this.app, this.plugin, card.id, this.currentMonth, () => this.onOpen()).open());
+        nameContainer.addEventListener('click', () => new CardBillDetailModal(this.app, this.plugin, card.id, this.currentMonth, () => this.refreshDashboard()).open());
         const cardNameEl = nameContainer.createDiv();
         cardNameEl.setText(`Fatura ${card.name} `);
 

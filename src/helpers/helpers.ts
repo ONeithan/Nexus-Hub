@@ -15,6 +15,13 @@ export function formatAsCurrency(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+export function generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 export function calculateCardBill(allTransactions: Transaction[], card: CreditCard, month: moment.Moment): { total: number, transactions: Transaction[], closingDate: moment.Moment, dueDate: moment.Moment } {
     const targetPaymentMonth = month.format('YYYY-MM');
 
@@ -26,11 +33,17 @@ export function calculateCardBill(allTransactions: Transaction[], card: CreditCa
     const billTotal = transactionsForBill.reduce((sum, t) => sum + t.amount, 0);
 
     // Determine the actual dates for this specific bill
-    const closingDate = month.clone().date(card.closingDay);
+    const closingDayInt = parseInt(String(card.closingDay), 10);
+    const dueDayInt = parseInt(String(card.dueDate), 10);
 
-    const dueDate = month.clone().date(card.dueDate);
+    const closingDate = month.clone().date(closingDayInt);
+    const dueDate = month.clone().date(dueDayInt);
+
+    // Debug: Log unexpected date shifts
+    // console.log(`[Nexus Hub Debug] Bill Calc: Card=${card.name} Closing=${closingDayInt} Due=${dueDayInt}`);
+
     // If due date is before closing day (e.g., closes day 20, due day 5), the due date is in the next month.
-    if (card.dueDate < card.closingDay) {
+    if (dueDayInt < closingDayInt) {
         dueDate.add(1, 'month');
     }
 

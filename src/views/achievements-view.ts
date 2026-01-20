@@ -186,6 +186,26 @@ export class AchievementsView extends ItemView {
 
         // Avatar with Halo
         const avatarContainer = header.createDiv({ cls: 'avatar-halo' });
+        avatarContainer.style.cursor = 'pointer';
+        avatarContainer.setAttribute('title', 'Ir para Perfil');
+        avatarContainer.onclick = async () => {
+            const PROFILE_TYPE = "nexus-profile-view";
+            // View switching logic
+            const leaves = this.app.workspace.getLeavesOfType(PROFILE_TYPE);
+            if (leaves.length > 0) {
+                this.app.workspace.revealLeaf(leaves[0]);
+            } else {
+                if ((this.plugin as any).activateView) {
+                    await (this.plugin as any).activateView(PROFILE_TYPE);
+                } else {
+                    // Fallback
+                    const leaf = this.app.workspace.getLeaf(false);
+                    await leaf.setViewState({ type: PROFILE_TYPE, active: true });
+                    this.app.workspace.revealLeaf(leaf);
+                }
+            }
+        };
+
         const img = avatarContainer.createEl('img', { attr: { src: userPic } });
         img.addClass('avatar-img');
 
@@ -340,73 +360,66 @@ export class AchievementsView extends ItemView {
         if (existing) existing.remove();
 
         const styleEl = document.head.createEl('style', { attr: { id: styleId } });
-        styleEl.innerHTML = `
-            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
-
+        styleEl.textContent = `
             .nexus-crystal-ui {
-                --bg-dark: #050505;
-                --card-glass: rgba(20, 20, 22, 0.4);
-                --card-border: rgba(255, 255, 255, 0.06);
-                --shine-color: rgba(255, 255, 255, 0.08);
-                --accent: #8b5cf6; 
-                --accent-glow: rgba(139, 92, 246, 0.4);
+                --accent: var(--interactive-accent); 
+                --accent-glow: rgba(var(--interactive-accent-rgb), 0.4);
                 
-                font-family: 'Outfit', sans-serif;
-                background-color: var(--bg-dark);
-                background-image: 
-                    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.08), transparent 25%),
-                    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08), transparent 25%);
-                color: #fff;
+                font-family: 'Inter', sans-serif;
+                background-color: var(--background-primary);
+                color: var(--text-normal);
                 height: 100%;
                 overflow-y: auto;
                 padding: 40px;
             }
             
             .section-title {
-                color: rgba(255,255,255,0.7);
+                color: var(--text-normal); 
                 font-size: 1rem;
                 text-transform: uppercase;
                 letter-spacing: 2px;
                 margin: 40px 0 20px 0;
-                border-bottom: 1px solid rgba(255,255,255,0.05);
+                border-bottom: 1px solid var(--background-modifier-border);
                 padding-bottom: 10px;
                 display: flex; align-items: center; gap: 10px;
+                opacity: 0.8;
             }
             .section-help-icon { opacity: 0.5; cursor: pointer; display: flex; }
-            .section-help-icon:hover { opacity: 1; color: var(--accent); }
+            .section-help-icon:hover { opacity: 1; color: var(--interactive-accent); }
             .section-help-icon svg { width: 16px; height: 16px; }
 
             /* Header Styles */
             .crystal-header {
                 display: flex; align-items: center; gap: 35px;
                 margin-bottom: 30px; padding: 30px;
-                background: rgba(255,255,255,0.02);
-                border-radius: 24px; border: 1px solid var(--card-border);
-                backdrop-filter: blur(10px);
+                background: var(--background-secondary);
+                border-radius: 24px; border: 1px solid var(--background-modifier-border);
+                box-shadow: var(--shadow-s);
             }
             .avatar-halo {
                 width: 110px; height: 110px; position: relative;
                 border-radius: 50%;
-                background: linear-gradient(135deg, var(--accent), #3b82f6);
+                background: linear-gradient(135deg, var(--interactive-accent), var(--text-accent));
                 padding: 3px; box-shadow: 0 0 25px var(--accent-glow);
+                flex-shrink: 0;
             }
             .avatar-img {
                 width: 100%; height: 100%; border-radius: 50%;
-                background: #000; object-fit: cover;
-                border: 4px solid #09090b; 
+                background: var(--background-primary); object-fit: cover;
+                border: 4px solid var(--background-primary); 
             }
             .level-tag {
                 position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-                background: #09090b; border: 1px solid var(--accent); color: var(--accent);
+                background: var(--background-primary); border: 1px solid var(--interactive-accent); color: var(--interactive-accent);
                 font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;
-                z-index: 2; box-shadow: 0 4px 10px rgba(0,0,0,0.5); letter-spacing: 1px;
+                z-index: 2; box-shadow: var(--shadow-s); letter-spacing: 1px;
             }
-            .header-info h1 { margin: 0 0 12px 0; font-size: 2.8rem; font-weight: 700; color: #fff; }
+            .header-info h1 { margin: 0 0 12px 0; font-size: 2.8rem; font-weight: 700; color: var(--text-normal); }
             .stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
             .stat-pill {
                 display: flex; align-items: center; gap: 8px;
-                background: rgba(255,255,255,0.03); padding: 8px 16px; border-radius: 12px;
-                font-size: 0.95rem; border: 1px solid rgba(255,255,255,0.05); color: #ccc;
+                background: var(--background-modifier-form-field); padding: 8px 16px; border-radius: 12px;
+                font-size: 0.95rem; border: 1px solid var(--background-modifier-border); color: var(--text-normal);
             }
             .xp-pill svg { color: #f59e0b; }
             .trophy-pill svg { color: #3b82f6; }
@@ -417,84 +430,95 @@ export class AchievementsView extends ItemView {
                 display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; margin-bottom: 50px;
             }
             .nexus-trading-card {
-                aspect-ratio: 2/3; background: #0c0c0c; border-radius: 12px;
-                border: 1px solid #333; position: relative; transition: transform 0.3s ease;
+                aspect-ratio: 2/3; background: var(--background-secondary); border-radius: 12px;
+                border: 1px solid var(--background-modifier-border); position: relative; transition: transform 0.3s ease;
+                box-shadow: var(--shadow-s);
+                opacity: 1 !important; /* Fixed opacity */
             }
             .nexus-trading-card.collected {
-                border-color: var(--card-accent, #fff); box-shadow: 0 0 15px rgba(0,0,0,0.5); cursor: pointer;
+                border-color: var(--card-accent, var(--interactive-accent)); box-shadow: var(--shadow-s); cursor: pointer;
             }
-            .nexus-trading-card.collected:hover {
-                transform: translateY(-8px) scale(1.05); box-shadow: 0 20px 40px rgba(0,0,0,0.6); z-index: 5;
+            .nexus-trading-card.collected:hover, .nexus-trading-card.collected:active {
+                transform: translateY(-8px) scale(1.05); box-shadow: var(--shadow-l); z-index: 5;
             }
             .rarity-badge {
                 align-self: flex-end; font-size: 0.7rem; text-transform: uppercase; font-weight: 800;
-                padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-bottom: 10px;
+                padding: 2px 6px; border-radius: 4px; background: var(--background-modifier-border); color: var(--text-normal); margin-bottom: 10px;
+                opacity: 1; border: 1px solid var(--background-modifier-border-hover);
             }
-            .card-inner { height: 100%; display: flex; flex-direction: column; padding: 12px; }
-            .card-visual {
-                flex: 1; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;
-                display: flex; align-items: center; justify-content: center; background: #050505;
+            
+            .nexus-trading-card .card-inner { height: 100%; display: flex; flex-direction: column; padding: 12px; }
+            .nexus-trading-card .card-visual {
+                flex: 1; border: 1px solid var(--background-modifier-border); border-radius: 8px; margin-bottom: 10px;
+                display: flex; align-items: center; justify-content: center; background: var(--background-secondary-alt);
             }
-            .visual-icon svg { width: 40px; height: 40px; }
-            .nexus-trading-card.locked { opacity: 0.4; filter: grayscale(1); border-style: dashed; }
-
+            .visual-icon svg { width: 40px; height: 40px; color: var(--text-normal); }
+            
+            .nexus-trading-card.locked { border-style: dashed; }
+            .nexus-trading-card.locked .card-visual { opacity: 0.5; filter: grayscale(1); }
+            .card-desc-locked { color: var(--text-muted); font-size: 0.8rem; font-style: italic; opacity: 1; }
+            
             /* View All Link */
             .view-all-container {
                 display: flex; justify-content: flex-start; margin-bottom: 40px;
-                padding-left: 5px; /* Slight offset to align with grid cards */
+                padding-left: 5px; 
             }
             .view-all-link {
-                background: rgba(255,255,255,0.05); color: #ccc; border: 1px solid rgba(255,255,255,0.1);
-                font-size: 0.9rem; padding: 8px 16px; border-radius: 6px; /* Less rounded */
+                background: var(--background-modifier-form-field); color: var(--text-muted); border: 1px solid var(--background-modifier-border);
+                font-size: 0.9rem; padding: 8px 16px; border-radius: 6px; 
                 display: flex; align-items: center; gap: 8px; transition: all 0.2s;
                 cursor: pointer; font-weight: 500;
             }
             .view-all-link svg { width: 14px; height: 14px; opacity: 0.7; }
-            .view-all-link:hover { color: #fff; border-color: var(--accent); background: rgba(139, 92, 246, 0.1); }
+            .view-all-link:hover { color: var(--text-normal); border-color: var(--interactive-accent); background: rgba(var(--interactive-accent-rgb), 0.1); }
             
             /* Categories (Main View) */
             .crystal-grid {
                 display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;
             }
             .crystal-card {
-                background: var(--card-glass); border: 1px solid var(--card-border);
+                background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
                 border-radius: 20px; position: relative; overflow: hidden;
                 transition: transform 0.3s; cursor: pointer;
+                box-shadow: var(--shadow-s);
             }
-            .crystal-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); }
+            .crystal-card:hover { transform: translateY(-5px); border-color: var(--interactive-accent); box-shadow: var(--shadow-m); }
             .card-front { padding: 25px; }
             .card-head { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
             .card-icon {
-                width: 50px; height: 50px; background: rgba(255,255,255,0.05); border-radius: 14px;
+                width: 50px; height: 50px; background: var(--background-modifier-form-field); border-radius: 14px;
                 display: flex; align-items: center; justify-content: center; font-size: 1.2em;
+                color: var(--text-normal);
             }
+            .card-title h3 { margin: 0; color: var(--text-normal); }
+
             .mastery-badge {
                 font-size: 0.65rem; background: #eab308; color: #000; font-weight: 800;
                 padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 4px;
             }
-            .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-            .prog-fill { height: 100%; background: var(--accent); }
+            .prog-bg { height: 6px; background: var(--background-modifier-border); border-radius: 3px; overflow: hidden; }
+            .prog-fill { height: 100%; background: var(--interactive-accent); }
             .mastery-fill { background: #eab308; box-shadow: 0 0 10px #eab308; }
-            .prog-text { font-size: 0.8rem; color: #888; margin-top: 8px; text-align: right; }
+            .prog-text { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; text-align: right; }
 
-            /* DETAIL VIEW (MISSION LOG MOCKUP) */
+            /* DETAIL VIEW */
             .detail-view-header {
                 display: flex; flex-direction: column; gap: 20px; margin-bottom: 40px;
             }
             .back-btn-large {
-                display: flex; align-items: center; gap: 10px; cursor: pointer; color: #aaa; align-self: flex-start;
+                display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-muted); align-self: flex-start;
                 font-size: 1.1rem; transition: color 0.2s;
             }
-            .back-btn-large:hover { color: #fff; }
+            .back-btn-large:hover { color: var(--text-normal); }
             .back-btn-large svg { width: 24px; height: 24px; }
-            .detail-view-header h1 { font-size: 2.5rem; margin: 0; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+            .detail-view-header h1 { font-size: 2.5rem; margin: 0; color: var(--text-normal); text-transform: uppercase; letter-spacing: 2px; }
 
             .tiers-container { display: flex; flex-direction: column; gap: 40px; }
-            .tier-section { background: rgba(255,255,255,0.02); border-radius: 20px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); }
+            .tier-section { background: var(--background-secondary); border-radius: 20px; padding: 25px; border: 1px solid var(--background-modifier-border); }
             
             .tier-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
-            .tier-header h3 { margin: 0; font-size: 1.5rem; }
-            .tier-counter { font-family: monospace; font-size: 1.2rem; opacity: 0.7; }
+            .tier-header h3 { margin: 0; font-size: 1.5rem; color: var(--text-normal); }
+            .tier-counter { font-family: monospace; font-size: 1.2rem; opacity: 0.7; color: var(--text-muted); }
 
             /* Tier Colors */
             .tier-bronze { border-left: 4px solid #cd7f32; } .tier-bronze h3 { color: #cd7f32; }
@@ -505,24 +529,32 @@ export class AchievementsView extends ItemView {
             .tier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
             
             .tier-card {
-                background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+                background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 12px;
                 padding: 20px; display: flex; flex-direction: column; gap: 15px; position: relative; overflow: hidden;
             }
-            .tier-card.unlocked { border-color: var(--accent); background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.05), transparent); }
+            .tier-card.unlocked { border-color: var(--interactive-accent); background: linear-gradient(to bottom right, rgba(var(--interactive-accent-rgb), 0.05), transparent); }
             
             .tier-icon { 
-                width: 40px; height: 40px; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-                margin-bottom: 5px;
+                width: 40px; height: 40px; background: var(--background-modifier-form-field); border-radius: 8px; display: flex; align-items: center; justify-content: center;
+                margin-bottom: 5px; color: var(--text-muted);
             }
-            .tier-card.unlocked .tier-icon { background: var(--accent); color: #fff; }
-            .tier-card.locked .tier-icon { color: #555; }
-
-            .tier-ach-name { font-weight: bold; font-size: 1.1rem; }
-            .tier-ach-desc { font-size: 0.9rem; color: #888; flex: 1; }
+            .tier-card.unlocked .tier-icon { background: var(--interactive-accent); color: var(--text-on-accent); }
             
-            .tier-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
-            .tier-xp { font-weight: bold; color: var(--accent); font-size: 0.85rem; }
-            .tier-date { font-size: 0.8rem; color: #666; font-family: monospace; }
+            .tier-ach-name { font-weight: bold; font-size: 1.1rem; color: var(--text-normal); }
+            .tier-ach-desc { font-size: 0.9rem; color: var(--text-muted); flex: 1; }
+            
+            .tier-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--background-modifier-border); padding-top: 10px; }
+            .tier-xp { font-weight: bold; color: var(--interactive-accent); font-size: 0.85rem; }
+            .tier-date { font-size: 0.8rem; color: var(--text-muted); font-family: monospace; }
+            
+            @media screen and (max-width: 768px) {
+                .nexus-crystal-ui { padding: 15px; }
+                .crystal-header { flex-direction: column; text-align: center; gap: 20px; }
+                .header-info h1 { font-size: 2rem; }
+                .stats-row { justify-content: center; }
+                .trading-cards-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+                .crystal-grid { grid-template-columns: 1fr; }
+            }
         `;
     }
 }

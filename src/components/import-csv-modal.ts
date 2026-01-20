@@ -37,10 +37,12 @@ export class ImportCsvModal extends Modal {
                     const file = (e.target as HTMLInputElement).files?.[0];
                     if (!file) return;
 
+                    // Validado: file.text() é API Web segura para mobile.
                     this.fileContent = await file.text();
                     btn.setButtonText(file.name);
                     new Notice(`Arquivo "${file.name}" carregado. Próximo passo: mapear colunas.`);
-                    // Aqui chamaremos a função para renderizar o passo 2: mapeamento de colunas.
+                    // A implementação real da lógica de parse está no modal principal (modals.ts) ou deve ser implementada aqui futuramente.
+                    // Por enquanto este modal é apenas um placeholder ou ponto de entrada simplificado.
                 };
             });
     }

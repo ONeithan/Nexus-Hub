@@ -1,3 +1,31 @@
+/* NUCLEAR OPTION: FORCE HIDE FAB GLOBALLY */
+.mobile-fab-add-transaction {
+    display: none !important;
+}
+
+/* UNIVERSAL INPUT FIX: Override any hardcoded black backgrounds */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+select,
+textarea {
+    background-color: var(--background-modifier-form-field) !important;
+    color: var(--text-normal) !important;
+    border: 1px solid var(--background-modifier-border) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--interactive-accent) !important;
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
 /* Estrutura Principal do Grid */
 .nexus-hub-grid-container {
     display: grid;

@@ -1,5 +1,5 @@
 import { NexusHubSettings, Transaction, Goal } from '../views/settings';
-import moment from 'moment';
+import { moment } from 'obsidian';
 
 /**
  * Gera transações virtuais para oportunidades de economia (metas e fundo de emergência)

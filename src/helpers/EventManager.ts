@@ -1,15 +1,30 @@
-import { EventEmitter } from 'events';
-type AppEvent = 'data-changed' | 'navigate-to-month' | string;
+// import { EventEmitter } from 'events'; // NODE ONLY - CRASHES MOBILE
+type AppEvent = 'data-changed' | 'navigate-to-month' | 'view-opened' | string;
 
-class EventManager extends EventEmitter {
+class SimpleEventEmitter {
+    private listeners: Record<string, ((...args: any[]) => void)[]> = {};
+
     emit(event: AppEvent, ...args: any[]): boolean {
-        return super.emit(event, ...args);
+        if (!this.listeners[event]) return false;
+        this.listeners[event].forEach(listener => listener(...args));
+        return true;
     }
+
     on(event: AppEvent, listener: (...args: any[]) => void): this {
-        return super.on(event, listener);
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(listener);
+        return this;
     }
+
     off(event: AppEvent, listener: (...args: any[]) => void): this {
-        return super.off(event, listener);
+        if (!this.listeners[event]) return this;
+        this.listeners[event] = this.listeners[event].filter(l => l !== listener);
+        return this;
+    }
+
+    removeAllListeners() {
+        this.listeners = {};
     }
 }
-export const eventManager = new EventManager();
+
+export const eventManager = new SimpleEventEmitter();

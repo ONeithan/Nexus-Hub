@@ -4,11 +4,33 @@ import { eventManager } from "../helpers/EventManager";
 import { formatAsCurrency } from "../helpers/helpers";
 import { addHelpButton } from "../helpers/ui-helpers";
 import { ReportGenerator, SankeyDataPoint } from "../services/report-generator";
-import { Chart, TooltipItem, registerables } from "chart.js/auto";
-import { SankeyController, Flow } from 'chartjs-chart-sankey';
+// Imports estáticos removidos para evitar crash no mobile
+// import { Chart, TooltipItem, registerables } from "chart.js/auto";
+// import { SankeyController, Flow } from 'chartjs-chart-sankey';
+import type { Chart, TooltipItem } from "chart.js/auto";
 import { Transaction, NexusHubSettings } from "./settings";
 
-Chart.register(...registerables, SankeyController, Flow);
+// Variáveis para armazenar as bibliotecas carregadas dinamicamente
+let Chartjs: any;
+let SankeyController: any;
+let Flow: any;
+let isChartJsLoaded = false;
+
+// Função auxiliar para carregar dependências
+async function loadChartJs() {
+    if (isChartJsLoaded) return;
+    try {
+        const c = await import('chart.js/auto');
+        const s = await import('chartjs-chart-sankey');
+        Chartjs = c.Chart;
+        SankeyController = s.SankeyController;
+        Flow = s.Flow;
+        Chartjs.register(...c.registerables, SankeyController, Flow);
+        isChartJsLoaded = true;
+    } catch (e) {
+        console.error("Nexus Hub: Failed to load Chart.js", e);
+    }
+}
 
 export const NEXUS_REPORT_VIEW_TYPE = "nexus-report-view";
 
@@ -39,6 +61,7 @@ export class ReportView extends ItemView {
     }
 
     async onOpen() {
+        await loadChartJs(); // Lazy load
         eventManager.emit('view-opened', 'report');
 
         // Use contentEl instead of containerEl to ensure we are inside the standard view area
@@ -48,6 +71,7 @@ export class ReportView extends ItemView {
 
         const styleEl = this.contentEl.createEl('style');
         styleEl.innerHTML = `
+/* CSS for Report View */
             .nexus-reports-container {
                 display: flex;
                 flex-direction: column;
@@ -65,7 +89,32 @@ export class ReportView extends ItemView {
                 margin-bottom: 10px;
                 border-bottom: 1px solid var(--background-modifier-border);
             }
-            /* ... (rest of styles remain but ensure they target correctly) ... */
+            
+            /* MOBILE SPECIFIC RULES (INJECTED) */
+            @media screen and (max-width: 768px) {
+                .dashboard-grid-container {
+                    display: flex !important;
+                    flex-direction: column !important;
+                }
+                
+                .kpi-grid {
+                    /* On mobile, 2 columns for KPIs is better than 1 huge list, but let's see. 
+                       2 columns is good for numbers. */
+                    grid-template-columns: 1fr 1fr !important; 
+                    gap: 10px !important;
+                }
+                
+                .insights-card ul {
+                    padding-left: 0 !important;
+                }
+                
+                .chart-wrapper {
+                    /* Restore height on mobile, but ensure width is fine */
+                    height: 300px !important; 
+                    position: relative;
+                }
+            }
+
             .report-title-group {
                 display: flex;
                 align-items: center;
@@ -77,6 +126,8 @@ export class ReportView extends ItemView {
                 display: flex;
                 border-bottom: 1px solid var(--background-modifier-border);
                 margin-bottom: 15px; 
+                overflow-x: auto; /* Allow scroll on small screens */
+                white-space: nowrap; /* Prevent wrapping */
             }
             .tab-header {
                 padding: 10px 15px;
@@ -141,6 +192,37 @@ export class ReportView extends ItemView {
             }
             .flow-chart-area {
                 grid-area: flow-chart;
+            }
+            .kpi-grid {
+                 display: grid;
+                 /* Desktop Default: 3 columns */
+                 grid-template-columns: repeat(3, 1fr); 
+                 gap: 15px;
+                 width: 100%;
+            }
+            .kpi-item {
+                background-color: var(--background-primary);
+                padding: 15px;
+                border-radius: 10px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                 /* Prevent overflow */
+                min-width: 0; 
+                word-wrap: break-word;
+            }
+            .kpi-value {
+                font-size: 1.4em;
+                font-weight: 700;
+                color: var(--text-normal);
+                margin-bottom: 4px;
+                /* Crucial for preventing overflow */
+                white-space: nowrap; 
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
             }
             .kpi-label-container {
                 display: flex;
@@ -238,10 +320,10 @@ export class ReportView extends ItemView {
             demoBtn.toggleClass('mod-cta', this.isDemoMode);
 
             if (this.isDemoMode) {
-                // Force to 'this_year'
-                periodSelect.value = 'this_year';
-                this.startDate = moment().startOf('year');
-                this.endDate = moment().endOf('year');
+                // Force to 'all_time' to ensure all generated history (past 12 months) is visible
+                periodSelect.value = 'all_time';
+                this.startDate = moment(new Date(0));
+                this.endDate = moment().add(2, 'years');
                 this.renderDemoReports();
             } else {
                 periodSelect.value = 'this_month'; // Reset to default
@@ -524,7 +606,8 @@ export class ReportView extends ItemView {
             return;
         }
 
-        const chart = new Chart(canvas, {
+        if (!isChartJsLoaded) return;
+        const chart = new Chartjs(canvas, {
             type: 'doughnut',
             data: {
                 labels: data.labels,
@@ -607,7 +690,8 @@ export class ReportView extends ItemView {
             return;
         }
 
-        const chart = new Chart(canvas, {
+        if (!isChartJsLoaded) return;
+        const chart = new Chartjs(canvas, {
             type: 'bar',
             data: data,
             options: {
@@ -654,7 +738,8 @@ export class ReportView extends ItemView {
             return;
         }
 
-        const chart = new Chart(canvas, {
+        if (!isChartJsLoaded) return;
+        const chart = new Chartjs(canvas, {
             type: 'sankey',
             data: {
                 datasets: [{
@@ -707,7 +792,8 @@ export class ReportView extends ItemView {
             return;
         }
 
-        const chart = new Chart(canvas, {
+        if (!isChartJsLoaded) return;
+        const chart = new Chartjs(canvas, {
             type: 'line',
             data: {
                 labels: data.labels,
@@ -745,7 +831,8 @@ export class ReportView extends ItemView {
             return;
         }
 
-        const chart = new Chart(canvas, {
+        if (!isChartJsLoaded) return;
+        const chart = new Chartjs(canvas, {
             type: 'line',
             data: {
                 labels: data.labels,

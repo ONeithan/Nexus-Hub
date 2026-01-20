@@ -58,20 +58,28 @@ export class AchievementNotifier {
       onStart: () => {
         (async () => {
           try {
-            const audioFilePath = plugin.manifest.dir + '/assets/conquista.mp3';
-            const arrayBuffer = await plugin.app.vault.adapter.readBinary(audioFilePath);
+            // Mobile-safe path resolution
+            const adapter = plugin.app.vault.adapter;
+            const audioPath = `${plugin.manifest.dir}/assets/conquista.mp3`;
 
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            audioContext.decodeAudioData(arrayBuffer, (buffer) => {
-              const source = audioContext.createBufferSource();
-              source.buffer = buffer;
-              source.connect(audioContext.destination);
-              source.start(0);
-            }, (e) => {
-              console.error('Error decoding audio data:', e);
-            });
+            if (await adapter.exists(audioPath)) {
+              const arrayBuffer = await adapter.readBinary(audioPath);
+              const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+
+              if (AudioContext) {
+                const audioContext = new AudioContext();
+                audioContext.decodeAudioData(arrayBuffer, (buffer) => {
+                  const source = audioContext.createBufferSource();
+                  source.buffer = buffer;
+                  source.connect(audioContext.destination);
+                  source.start(0);
+                }, (e) => {
+                  console.warn('[Nexus Hub] Audio decode error (safe to ignore on some devices):', e);
+                });
+              }
+            }
           } catch (error) {
-            console.error('Error playing achievement sound:', error);
+            console.warn('[Nexus Hub] Audio playback failed (mobile limitation or missing file):', error);
           }
         })();
       },

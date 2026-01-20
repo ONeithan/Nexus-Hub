@@ -1,6 +1,6 @@
 import { Transaction, NexusHubSettings, Goal } from '../views/settings';
 import { NexusTradingCard } from './achievements';
-import moment from 'moment';
+import { moment } from 'obsidian';
 
 /**
  * Sistema de Regras Determinísticas para Cartas
@@ -409,6 +409,9 @@ export const CARD_RULES: Record<string, CardRule> = {
 
     'card_aries': (tx, settings, allTx) => {
         // "Gaste sem pensar" (3 despesas no mesmo dia)
+        // EXCEÇÃO: Não disparar em verificações de sistema (apenas ao criar uma transação real)
+        if (tx.id === 'system_check' || tx.id === 'init' || tx.id === 'check-all-dummy') return false;
+
         const paidTx = allTx.filter(t => t.status === 'paid');
         const today = moment(tx.date).format('YYYY-MM-DD');
         const todayExpenses = paidTx.filter(t =>

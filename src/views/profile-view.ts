@@ -4,6 +4,7 @@ import { ALL_ACHIEVEMENTS, NEXUS_TRADING_CARDS, NEXUS_BADGES } from "../services
 import { calculateLevel, getExperienceForLevel, getRankTitle, isBadgeUnlocked } from "../helpers/gamification-helpers";
 import { ProfileSettingsModal } from "../components/modals";
 import { BadgeSelectionModal } from "../components/badge-selection-modal";
+import { PackOpeningModal } from "../components/pack-opening-modal";
 
 export const NEXUS_PROFILE_VIEW_TYPE = "nexus-profile-view";
 
@@ -52,8 +53,11 @@ export class ProfileView extends ItemView {
         // Banner Logic
         if ((this.plugin as any).settings.profileBanner) {
             container.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9)), url(${(this.plugin as any).settings.profileBanner})`;
+            container.addClass('has-banner');
         } else {
-            container.style.background = `linear-gradient(135deg, #09090b 0%, #1a1a2e 100%)`;
+            // REMOVED HARDCODED DARK BACKGROUND
+            // Now relies on CSS .hero-card default background (theme adaptive)
+            container.removeClass('has-banner');
         }
 
         const content = container.createDiv({ cls: 'hero-content' });
@@ -70,19 +74,36 @@ export class ProfileView extends ItemView {
         leftSide.style.gap = '30px';
 
         // Avatar + Border Config
-        const avatarContainer = leftSide.createDiv({ cls: 'hero-avatar-wrapper' });
-        const avatarImg = avatarContainer.createEl('img', { cls: 'hero-avatar' });
+        // Avatar + Border Config (Standardized Halo + Level)
+        const totalPointsForLevel = ((this.plugin as any).settings.achievements || []).reduce((sum: number, aa: any) => sum + aa.points, 0);
+        const playerLevelCalc = calculateLevel(totalPointsForLevel);
+
+        const avatarHalo = leftSide.createDiv({ cls: 'avatar-halo' }); // Replaces simple wrapper
+        avatarHalo.style.cursor = 'pointer';
+
+        // Avatar Image
+        const avatarImg = avatarHalo.createEl('img', { cls: 'avatar-img' });
         avatarImg.src = (this.plugin as any).settings.profilePicture || 'https://github.com/shadcn.png';
 
-        // Border Styles
-        const borderColor = (this.plugin as any).settings.profileBorderColor || '#a855f7';
-        avatarContainer.style.borderColor = borderColor;
-        avatarContainer.style.boxShadow = `0 0 30px ${borderColor}40`; // Glow base
-        if ((this.plugin as any).settings.profileBorderEffect === 'shine') avatarContainer.addClass('effect-shine');
-        if ((this.plugin as any).settings.profileBorderEffect === 'glow') avatarContainer.addClass('effect-glow');
+        // Level Tag
+        const levelTag = avatarHalo.createDiv({ cls: 'level-tag' });
+        levelTag.setText(`LVL ${playerLevelCalc}`);
+
+        // Border Styles - Use CSS variable for default border if none set, or dynamic
+        const borderColor = (this.plugin as any).settings.profileBorderColor || 'var(--interactive-accent)';
+        // Apply halo border color if custom
+        if (borderColor !== 'var(--interactive-accent)') {
+            avatarHalo.style.background = `linear-gradient(135deg, ${borderColor}, ${borderColor})`;
+            avatarHalo.style.boxShadow = `0 0 25px ${borderColor}60`;
+            levelTag.style.borderColor = borderColor;
+            levelTag.style.color = borderColor;
+        }
+
+        if ((this.plugin as any).settings.profileBorderEffect === 'shine') avatarHalo.addClass('effect-shine');
+        if ((this.plugin as any).settings.profileBorderEffect === 'glow') avatarHalo.addClass('effect-glow');
 
         // Click to Edit
-        avatarContainer.onclick = () => new ProfileSettingsModal(this.app, this.plugin, () => this.render()).open();
+        avatarHalo.onclick = () => new ProfileSettingsModal(this.app, this.plugin, () => this.render()).open();
 
         // Info Side
         const info = leftSide.createDiv({ cls: 'hero-text' });
@@ -97,12 +118,9 @@ export class ProfileView extends ItemView {
         editBtn.onclick = () => new ProfileSettingsModal(this.app, this.plugin, () => this.render()).open();
 
         // Level & Rank
-        const totalPoints = ((this.plugin as any).settings.achievements || []).reduce((sum: number, aa: any) => sum + aa.points, 0);
-        const playerLevel = calculateLevel(totalPoints);
-
         const metaRow = info.createDiv({ cls: 'hero-meta-row' });
         const rankBadge = metaRow.createDiv({ cls: 'rank-badge' });
-        rankBadge.setText(getRankTitle(playerLevel)); // e.g., "Novato", "Veterano"
+        rankBadge.setText(getRankTitle(playerLevelCalc)); // e.g., "Novato", "Veterano"
 
         // Cards Collection Summary
         const collectedCards = (this.plugin as any).settings.collectedCards?.length || 0;
@@ -148,7 +166,7 @@ export class ProfileView extends ItemView {
         const row = container.createDiv({ cls: 'stats-grid' });
 
         const userAchievements = (this.plugin as any).settings.achievements || [];
-        const totalXP = userAchievements.reduce((sum, aa) => sum + aa.points, 0);
+        const totalXP = userAchievements.reduce((sum: any, aa: any) => sum + aa.points, 0);
 
         this.createStatCard(row, 'XP Total', `${totalXP}`, 'zap');
         this.createStatCard(row, 'Conquistas', `${userAchievements.length}`, 'trophy');
@@ -206,7 +224,7 @@ export class ProfileView extends ItemView {
         const grid = container.createDiv({ cls: 'showcase-grid' });
 
         topCards.forEach(cardData => {
-            const el = grid.createDiv({ cls: 'nexus-trading-card collected showcase-item' });
+            const el = grid.createDiv({ cls: 'nexus-trading-card showcase-item' });
             el.style.setProperty('--card-accent', cardData.color);
             el.createDiv({ cls: 'foil-layer' });
 
@@ -233,7 +251,6 @@ export class ProfileView extends ItemView {
             b.createEl('span', { text: cardData.name });
 
             el.onclick = () => {
-                const { PackOpeningModal } = require('../components/pack-opening-modal');
                 new PackOpeningModal(this.plugin.app, cardData).open();
             }
         });
@@ -327,36 +344,53 @@ export class ProfileView extends ItemView {
             .nexus-profile-v3 {
                 padding: 20px; margin: 0; max-width: 100%;
                 font-family: 'Inter', sans-serif;
-                background: linear-gradient(to bottom, #09090b, #000);
+                background-color: var(--background-primary);
                 min-height: 100%;
-                color: #fff;
+                color: var(--text-normal);
             }
             .bento-card {
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.08);
+                background-color: var(--background-secondary);
+                border: 1px solid var(--background-modifier-border);
                 border-radius: 24px;
                 padding: 30px;
                 overflow: hidden;
+                box-shadow: var(--shadow-s);
             }
             
-            /* Hero */
+            /* Hero Wrapper */
             .hero-card {
                 min-height: 250px;
                 background-size: cover; background-position: center;
                 display: flex; align-items: center; justify-content: flex-start;
                 margin-bottom: 30px;
                 position: relative;
+                /* Adaptive Gradient Background (Light/Dark Safe) */
+                background: linear-gradient(135deg, var(--background-secondary), var(--background-secondary-alt));
+                border: 1px solid var(--background-modifier-border);
             }
+            /* Only show overlay if there IS a background image (handled by JS adding .has-banner) */
+            .hero-card.has-banner::before {
+                content: '';
+                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                background: linear-gradient(to right, var(--background-primary), transparent);
+                opacity: 0.8;
+                z-index: 1;
+                border-radius: 24px;
+            }
+            
             .hero-content {
                 display: flex; align-items: center; gap: 40px; z-index: 2; width: 100%;
+                position: relative; 
             }
             .hero-avatar-wrapper {
                 width: 140px; height: 140px;
-                border: 4px solid #fff; /* Default override by JS */
+                border: 4px solid var(--background-primary); 
                 border-radius: 50%;
                 cursor: pointer;
                 transition: transform 0.3s;
                 overflow: hidden;
+                box-shadow: var(--shadow-l);
+                flex-shrink: 0; 
             }
             .hero-avatar-wrapper:hover { transform: scale(1.05); }
             .hero-avatar { width: 100%; height: 100%; object-fit: cover; }
@@ -365,60 +399,54 @@ export class ProfileView extends ItemView {
             .effect-shine { position: relative; overflow: hidden; }
             .effect-shine::after {
                 content: ''; position: absolute; top:0; left:-100%; width: 50%; height: 100%;
-                background: linear-gradient(to right, transparent, rgba(255,255,255,0.5), transparent);
+                background: linear-gradient(to right, transparent, var(--text-accent), transparent);
+                opacity: 0.3;
                 transform: skewX(-25deg); animation: shineAnim 3s infinite;
             }
             @keyframes shineAnim { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
             
-            .hero-text h1 { font-size: 3rem; margin: 0; line-height:                margin-bottom: 5px;
-            }
+            .hero-text { color: var(--text-normal); }
             .hero-name-row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
-            .hero-name-row h1 { margin: 0; font-size: 2.5rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+            .hero-name-row h1 { margin: 0; font-size: 2.5rem; font-weight: 800; line-height: 1; letter-spacing: -1px; color: var(--text-normal); }
             
-            .hero-meta-row { display: flex; align-items: center; gap: 15px; }
+            .edit-btn-icon { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+            .edit-btn-icon:hover { color: var(--interactive-accent); }
+
+            .hero-meta-row { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
             
             .rank-badge {
-                background: #a855f7; color: white; padding: 4px 12px; border-radius: 20px;
+                background: var(--interactive-accent); color: var(--text-on-accent); padding: 4px 12px; border-radius: 20px;
                 font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
-                box-shadow: 0 4px 10px rgba(168, 85, 247, 0.4);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             }
             
             .hero-card-info {
-                display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #aaa;
-                background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;
+                display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted);
+                background: var(--background-modifier-form-field); padding: 4px 10px; border-radius: 6px;
             }
-            .mini-icon svg { width: 14px; height: 14px; color: #ccc; }
-
-            .hero-featured-badge {
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                background: rgba(0,0,0,0.4); padding: 15px 25px; border-radius: 16px;
-                border: 1px solid rgba(168, 85, 247, 0.3); backdrop-filter: blur(5px);
-                transition: transform 0.3s;
-            }
-            .hero-featured-badge:hover { transform: scale(1.05); border-color: #a855f7; }
-            .featured-icon svg { width: 40px; height: 40px; color: #a855f7; margin-bottom: 5px; filter: drop-shadow(0 0 8px rgba(168,85,247,0.6)); }
-            .featured-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #ddd; }
+            .mini-icon svg { width: 14px; height: 14px; color: var(--text-muted); }
 
             /* Highlighted Badge */
             .hero-badge-container {
                 width: 90px; height: 110px;
                 display: flex; flex-direction: column; align-items: center; justify-content: center;
                 transition: transform 0.2s; cursor: pointer;
+                margin-left: auto; /* Push to right */
             }
             .hero-badge-container:hover { transform: scale(1.1); }
             
             .hero-badge-icon { 
                 width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; 
-                margin-bottom: 8px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.25));
+                margin-bottom: 8px; filter: drop-shadow(0 0 10px var(--background-modifier-box-shadow));
             }
-            .hero-badge-icon svg { width: 100%; height: 100%; }
+            .hero-badge-icon svg { width: 100%; height: 100%; color: var(--interactive-accent); }
             
             .hero-badge-icon.placeholder { opacity: 0.3; filter: none; }
-            .hero-badge-icon.placeholder svg { color: #555; }
+            .hero-badge-icon.placeholder svg { color: var(--text-muted); }
 
             .featured-label { 
-                font-size: 0.85rem; color: #fff; text-align: center; 
-                line-height: 1.1; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+                font-size: 0.85rem; color: var(--text-normal); text-align: center; 
+                line-height: 1.1; font-weight: 600;
             }
 
             /* Layout Columns */
@@ -428,56 +456,124 @@ export class ProfileView extends ItemView {
             /* Stats */
             .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
             .mini-stat { padding: 20px; display: flex; align-items: center; gap: 15px; }
-            .stat-icon { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; }
-            .stat-value { font-size: 1.4rem; font-weight: 700; }
-            .stat-label { font-size: 0.8rem; color: #888; }
+            .stat-icon { background: var(--background-modifier-form-field); padding: 10px; border-radius: 12px; }
+            .stat-icon svg { color: var(--text-muted); }
+            .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-normal); }
+            .stat-label { font-size: 0.8rem; color: var(--text-muted); }
             
-            /* Badges */
-            .badges-card h3 { margin-top: 0; opacity: 0.7; }
-            /* ... (badge styles kept if needed for restore) ... */
+            /* Showcases */
+            .showcase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+            .showcase-header h3 { margin: 0; font-size: 1.1em; color: var(--text-normal); }
+            .edit-icon { color: var(--text-muted); cursor: pointer; }
+            
+            .showcase-grid { display: flex; gap: 10px; justify-content: space-around; flex-wrap: wrap; }
+            
+            /* Use Specific Selector to Override Global Card Styles */
+            .nexus-trading-card.showcase-item {
+                width: 90px !important; height: 130px !important;
+                background-color: var(--background-primary) !important;
+                border: 1px solid var(--background-modifier-border) !important; 
+                border-radius: 8px !important;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                cursor: pointer; position: relative; overflow: hidden;
+                margin: 0 !important;
+            }
+            .nexus-trading-card.showcase-item .card-inner {
+                padding: 0 !important; width: 100% !important; height: 100% !important;
+                display: flex; flex-direction: column;
+            }
+            
+            .card-visual { background: transparent; width: 100%; flex: 1; display: flex; align-items: center; justify-content: center; }
+            .visual-icon svg { width: 32px; height: 32px; color: var(--text-normal); }
+            .card-bottom.compact { font-size: 0.7em; padding: 4px; text-align: center; width: 100%; background: var(--background-secondary); color: var(--text-normal); }
 
-            /* Best Cards */
-            .best-cards-card h3 { margin-top: 0; margin-bottom: 20px; opacity: 0.7; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-            .best-cards-grid { 
-                display: flex; gap: 15px; justify-content: center; /* Center them */
-            }
-            .mini-card {
-                flex: 0 0 100px; /* Fixed width */
-                aspect-ratio: 2/3; /* Vertical card shape */
-                background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.8) 100%);
-                border: 1px solid #333; border-radius: 8px;
-                padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-                cursor: pointer; transition: all 0.3s ease;
-                position: relative;
-                overflow: hidden;
-            }
-            .mini-card:hover { transform: translateY(-5px) scale(1.05); z-index: 2; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-            
-            .mini-card-icon {
-                flex: 1; display: flex; align-items: center; justify-content: center; width: 100%;
-                background: rgba(0,0,0,0.2); border-radius: 4px; margin-bottom: 5px;
-            }
-            .mini-card-icon svg { width: 32px; height: 32px; filter: drop-shadow(0 0 5px currentColor); }
-            
-            .mini-card-name { 
-                font-size: 0.7rem; text-align: center; color: #eee; font-weight: 700; line-height: 1.1; 
-                width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-            }
-            
             /* Rarity Glows */
-            .mini-card.rarity-legendary { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
-            .mini-card.rarity-epic { border-color: #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); }
-            .mini-card.rarity-rare { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.15); }
+            .nexus-trading-card.showcase-item.rarity-legendary { border-color: #f59e0b !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2) !important; }
+            .nexus-trading-card.showcase-item.rarity-epic { border-color: #a855f7 !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.2) !important; }
+            .nexus-trading-card.showcase-item.rarity-rare { border-color: #3b82f6 !important; box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important; }
 
-            /* Activity */
-            .activity-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-            .activity-row { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; }
+            /* Trophy Card Styles (Missing in V4) */
+            .showcase-trophy-card {
+                width: 100px;
+                background-color: var(--background-primary);
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 12px;
+                padding: 10px;
+                display: flex; flex-direction: column; align-items: center; gap: 8px;
+                text-align: center;
+            }
+            .trophy-icon svg { width: 28px; height: 28px; color: #f59e0b; }
+            .trophy-name { font-size: 0.8rem; font-weight: 600; line-height: 1.2; color: var(--text-normal); }
+            .trophy-xp { font-size: 0.7rem; color: var(--text-muted); }
+
+            /* Activity List */
+            .activity-list { display: flex; flex-direction: column; gap: 0; }
+            .activity-row { 
+                display: flex; align-items: center; gap: 15px; 
+                padding: 12px 0;
+                border-bottom: 1px solid var(--background-modifier-border); 
+            }
             .activity-row:last-child { border-bottom: none; }
-            .act-icon { color: #888; }
+            .act-icon { color: var(--text-muted); }
             .act-info { flex: 1; }
-            .act-name { font-weight: 500; font-size: 0.95rem; color: #eee; }
-            .act-time { font-size: 0.8rem; color: #666; }
-            .act-xp { font-weight: 700; color: #a855f7; font-size: 0.9rem; }
+            .act-name { font-weight: 600; font-size: 0.95rem; color: var(--text-normal); }
+            .act-time { font-size: 0.8rem; color: var(--text-muted); }
+            .act-xp { font-weight: 700; color: var(--interactive-accent); font-size: 0.9rem; }
+
+            /* --- MOBILE RESPONSIVENESS (POLISHED) --- */
+            @media screen and (max-width: 768px) {
+                .nexus-profile-v3 {
+                    padding: 15px;
+                }
+                .bento-grid {
+                    grid-template-columns: 1fr; /* Stack columns */
+                    gap: 15px;
+                }
+                .hero-content {
+                    flex-direction: column;
+                    text-align: center;
+                    gap: 15px;
+                }
+                
+                /* HERO ON MOBILE: NO GRADIENT OVERLAY IF NO BANNER */
+                /* If banner exists, keep it subtle. If not, rely on card bg. */
+                .hero-card.has-banner::before {
+                     background: linear-gradient(to bottom, var(--background-primary) 10%, transparent 90%);
+                     opacity: 0.5;
+                }
+                
+                .hero-left {
+                    flex-direction: column;
+                    text-align: center;
+                }
+                .hero-name-row {
+                    justify-content: center;
+                }
+                .hero-meta-row {
+                    justify-content: center;
+                }
+                .hero-badge-container {
+                    margin-left: 0; 
+                    margin-top: 10px;
+                }
+                
+                /* COMPACT STATS: 3 Columns on Mobile */
+                .stats-grid {
+                    grid-template-columns: 1fr 1fr 1fr; /* Force 3 columns */
+                    gap: 8px;
+                }
+                .mini-stat {
+                    flex-direction: column;
+                    padding: 10px;
+                    justify-content: center;
+                    text-align: center;
+                    gap: 5px;
+                    background-color: var(--background-primary); /* Stand out from bento card */
+                }
+                .stat-icon { padding: 6px; border-radius: 8px; }
+                .stat-value { font-size: 1.1rem; }
+                .stat-label { font-size: 0.7rem; }
+            }
         `;
     }
 }

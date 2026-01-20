@@ -2,8 +2,8 @@ import { eventManager } from '../helpers/EventManager';
 import { AchievementNotifier } from '../helpers/AchievementNotifier';
 import { NexusHubSettings } from '../views/settings';
 import { ALL_ACHIEVEMENTS, Achievement } from './achievements';
-import NexusHubPlugin from '../main';
-import moment from 'moment';
+import type NexusHubPlugin from '../main';
+import { moment } from 'obsidian';
 
 let plugin: NexusHubPlugin;
 

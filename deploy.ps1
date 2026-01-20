@@ -1,3 +1,10 @@
+Write-Host "Iniciando Build..."
+npm run build
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build falhou! Abortando deploy."
+    exit $LASTEXITCODE
+}
+
 $DEST_DIR = "D:\Neithan\Documentos\Obsidian teste ruins\testessss\.obsidian\plugins\nexus-hub"
 
 if (!(Test-Path -Path $DEST_DIR)) {

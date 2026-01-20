@@ -1,11 +1,8 @@
-import { Modal, App, Setting, Notice, setIcon, TextComponent, DropdownComponent, ButtonComponent, ToggleComponent } from 'obsidian';
-import moment from 'moment';
-import * as XLSX from 'xlsx';
-import { v4 as uuidv4 } from 'uuid';
+import { Modal, App, Setting, Notice, setIcon, TextComponent, DropdownComponent, ButtonComponent, ToggleComponent, moment } from 'obsidian';
 
 import { Transaction, Goal, CreditCard, Category, NexusHubSettings, DEFAULT_SETTINGS } from '../views/settings';
 import type NexusHubPlugin from '../main';
-import { formatAsCurrency, calculateCardBill, suggestCategory, parseCurrency, calculatePaymentMonth } from '../helpers/helpers';
+import { formatAsCurrency, calculateCardBill, suggestCategory, parseCurrency, calculatePaymentMonth, generateUUID } from '../helpers/helpers';
 import { eventManager } from '../helpers/EventManager';
 import { setupCurrencyInput, renderCategoryDropdown, ConfirmationModal, PromptModal, InfoModal } from '../helpers/ui-helpers';
 export { ConfirmationModal, PromptModal };
@@ -150,7 +147,7 @@ export class GoalsModal extends Modal {
 
                             // 2. Register REAL Transaction (Fix "Not Registering" issue)
                             const newTx: any = {
-                                id: `txn_${Date.now()}`,
+                                id: `txn_${Date.now()}_${generateUUID()}`,
                                 description: `Aporte Manual: ${goal.name}`,
                                 amount: amountValue,
                                 date: moment().format('YYYY-MM-DD'),
@@ -1112,6 +1109,17 @@ export class ImportCsvModal extends Modal {
 
     async parseFile() {
         if (!this.file) return;
+
+        let XLSX;
+        try {
+            // Lazy load XLSX to prevent mobile crash on startup
+            XLSX = await import('xlsx');
+        } catch (e) {
+            console.error("Nexus Hub: Failed to load xlsx library", e);
+            new Notice("Erro: Biblioteca XLSX não suportada neste dispositivo.");
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (event) => {
             const fileContent = event.target?.result;
@@ -2082,6 +2090,9 @@ export class AddTransactionModal extends Modal {
     private dayOfMonth: number = moment().date();
     private generationDate: string = moment().add(5, 'years').format('YYYY-MM-DD'); // New property for default limit
 
+    // Edit Mode State
+    private editAllInstallments: boolean = false;
+
     constructor(app: App, plugin: NexusHubPlugin, currentMonth: moment.Moment, onSubmit: () => void, transaction?: Transaction) {
         super(app);
         this.plugin = plugin;
@@ -2117,6 +2128,17 @@ export class AddTransactionModal extends Modal {
         const title = this.transaction ? 'Editar Transação' : 'Adicionar Nova Transação';
         const header = contentEl.createDiv({ cls: 'modal-header' });
         header.createEl('h2', { text: title });
+
+        if (this.transaction) {
+            if (this.transaction.isInstallment && this.transaction.installmentOf) {
+                new Setting(contentEl)
+                    .setName('Aplicar a todas as parcelas?')
+                    .setDesc('Se marcado, atualizará valor, categoria e status (se pago/pendente mudou) de toda a série.')
+                    .addToggle(toggle => toggle
+                        .setValue(this.editAllInstallments)
+                        .onChange(value => this.editAllInstallments = value));
+            }
+        }
 
         const styleEl = contentEl.createEl('style');
         styleEl.innerHTML = `
@@ -2395,19 +2417,54 @@ export class AddTransactionModal extends Modal {
         }
 
         if (this.transaction) {
-            // --- Handle EDITING ---
-            const txIndex = this.plugin.settings.transactions.findIndex(t => t.id === this.transaction!.id);
-            if (txIndex > -1) {
-                this.plugin.settings.transactions[txIndex] = {
-                    ...this.plugin.settings.transactions[txIndex],
-                    description: this.description,
-                    amount: this.amount,
-                    date: this.date,
-                    category: this.category,
-                    type: this.type,
-                    status: this.status,
-                    paymentMonth: moment(this.date).format('YYYY-MM'),
-                };
+            // --- UPDATE EXISTING ---
+            if (this.editAllInstallments && this.transaction.installmentOf) {
+                // BULK UPDATE INSTALLMENTS
+                const linkedId = this.transaction.installmentOf;
+                // Prepare updated fields
+                // Note: We do NOT update 'date' for all (each keeps its month).
+                // We update: Amount, Category, Type. Status? Only if we want to bulk pay/unpay? Maybe risky. 
+                // Let's update Status too, assuming user wants consistency.
+                // Description? We should try to preserve the (x/y) suffix.
+
+                const baseDescMatch = this.description.match(/^(.*)\s\(\d+\/\d+\)$/);
+                const newBaseDesc = baseDescMatch ? baseDescMatch[1] : this.description; // If user removed suffix, use whole string.
+
+                this.plugin.settings.transactions.forEach(t => {
+                    if (t.installmentOf === linkedId) {
+                        t.amount = this.amount;
+                        t.category = this.category;
+                        t.type = this.type;
+                        // Update Status only if it was requested? Or simple overwrite?
+                        // Let's match the edit.
+                        t.status = this.status;
+
+                        // Description Logic
+                        if (t.currentInstallment && t.totalInstallments) {
+                            t.description = `${newBaseDesc} (${t.currentInstallment}/${t.totalInstallments})`;
+                        } else {
+                            t.description = newBaseDesc;
+                        }
+                    }
+                });
+                new Notice('Todas as parcelas foram atualizadas.');
+
+            } else {
+                // SINGLE UPDATE
+                const index = this.plugin.settings.transactions.findIndex(t => t.id === this.transaction!.id);
+                if (index !== -1) {
+                    this.plugin.settings.transactions[index] = {
+                        ...this.transaction!,
+                        description: this.description,
+                        amount: this.amount,
+                        date: this.date,
+                        category: this.category,
+                        type: this.type,
+                        status: this.status,
+                        isRecurring: this.isRecurring,
+                        endDate: this.endDate
+                    };
+                }
             }
         } else {
             // --- Handle CREATION ---
@@ -2581,20 +2638,43 @@ export class AddPurchaseModal extends Modal {
     private installments: number = 1;
     private category: string = '';
 
-    constructor(app: App, plugin: NexusHubPlugin, card: CreditCard, onSubmit: () => void, transaction?: Transaction) { // Add transaction to constructor
+    constructor(app: App, plugin: NexusHubPlugin, card: CreditCard, onSubmit: () => void, transaction?: Transaction) {
         super(app);
         this.plugin = plugin;
         this.card = card;
         this.onSubmit = onSubmit;
-        this.transaction = transaction; // Assign transaction
-        this.category = 'Fatura de Cartão'; // Default category for card purchases
+        this.transaction = transaction;
+        this.category = 'Fatura de Cartão';
 
         if (transaction) {
-            this.description = transaction.description;
-            this.totalAmount = transaction.amount * (transaction.totalInstallments || 1);
-            this.purchaseDate = transaction.purchaseDate || transaction.date;
-            this.installments = transaction.totalInstallments || 1;
+            this.description = transaction.description.replace(/\s\(\d+\/\d+\)$/, ''); // Remove (1/N) suffix
             this.category = transaction.category;
+            this.purchaseDate = transaction.purchaseDate || transaction.date;
+
+            // Reconstruct Total Amount and Installments count
+            // Try to detect "Orphan" installments (legacy/bugged data) via Regex
+            const installmentMatch = transaction.description.match(/^(.*?)\s\((\d+)\/(\d+)\)$/);
+
+            if (transaction.installmentOf) {
+                const siblings = this.plugin.settings.transactions.filter(t => t.installmentOf === transaction.installmentOf);
+                if (siblings.length > 0) {
+                    this.totalAmount = siblings.reduce((sum, t) => sum + t.amount, 0);
+                    this.installments = transaction.totalInstallments || siblings.length;
+                } else {
+                    this.installments = transaction.totalInstallments || 1;
+                    this.totalAmount = transaction.amount * this.installments;
+                }
+            } else if (installmentMatch) {
+                // Fallback for Orphan Installments: Derive from Description
+                // match[1] = Base Name, match[2] = Current, match[3] = Total
+                const totalInst = parseInt(installmentMatch[3], 10);
+                this.installments = totalInst;
+                this.totalAmount = transaction.amount * totalInst; // Approximate total
+                // We don't have siblings, so we assume equal parts.
+            } else {
+                this.totalAmount = transaction.amount;
+                this.installments = 1;
+            }
         }
     }
 
@@ -2603,8 +2683,10 @@ export class AddPurchaseModal extends Modal {
         contentEl.empty();
         this.contentEl.addClass('nexus-fintech-modal-compact');
 
+        const title = this.transaction ? `Editar Compra: ${this.description}` : `Adicionar Compra em ${this.card.name}`;
+
         const header = contentEl.createDiv({ cls: 'modal-header-with-action' });
-        header.createEl('h2', { text: `Adicionar Compra em ${this.card.name}` });
+        header.createEl('h2', { text: title });
         new ButtonComponent(header).setIcon('arrow-left').setTooltip('Voltar').onClick(() => {
             this.close();
         });
@@ -2636,8 +2718,9 @@ export class AddPurchaseModal extends Modal {
         this.renderFormGroups(formContainer);
 
         const buttonContainer = formContainer.createDiv({ cls: 'form-group-button' });
+        const btnText = this.transaction ? 'Atualizar Compra' : 'Salvar Compra';
         new Setting(buttonContainer)
-            .addButton(button => button.setButtonText('Salvar Compra').setCta().onClick(() => this.savePurchase()));
+            .addButton(button => button.setButtonText(btnText).setCta().onClick(() => this.savePurchase()));
     }
 
     private renderFormGroups(container: HTMLElement) {
@@ -2686,16 +2769,37 @@ export class AddPurchaseModal extends Modal {
             return;
         }
 
-        // Remove old installments if editing
+        // --- CLEAR OLD TRANSACTIONS IF EDITING ---
         if (this.transaction) {
-            this.plugin.settings.transactions = this.plugin.settings.transactions.filter(
-                t => !(t.installmentOf === this.transaction!.installmentOf && t.cardId === this.transaction!.cardId)
-            );
+            if (this.transaction.installmentOf) {
+                const oldId = this.transaction.installmentOf;
+                // Remove existing installments linked to this purchase (ID Match)
+                this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => t.installmentOf !== oldId);
+            } else {
+                // No ID? Check for Regex Pattern (Legacy/Orphan Support)
+                const installmentMatch = this.transaction.description.match(/^(.*?)\s\((\d+)\/(\d+)\)$/);
+
+                if (installmentMatch) {
+                    const baseName = installmentMatch[1];
+                    const escapedName = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const pattern = new RegExp(`^${escapedName}\\s\\(\\d+\\/\\d+\\)$`);
+
+                    this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => {
+                        // Keep if it DOES NOT match criteria
+                        if (t.cardId !== this.card.id) return true;
+                        return !pattern.test(t.description);
+                    });
+                } else {
+                    // Remove single transaction (standard)
+                    this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => t.id !== this.transaction!.id);
+                }
+            }
         }
 
         const installmentAmount = this.totalAmount / this.installments;
+        const purchaseGroupId = this.transaction?.installmentOf || `purch_${Date.now()}`; // Keep ID if editing, else new
+
         const purchaseMoment = moment(this.purchaseDate);
-        const purchaseGroupId = this.transaction?.installmentOf || `purch_${Date.now()}`;
 
         const newTransactions: Transaction[] = [];
 
@@ -2708,14 +2812,17 @@ export class AddPurchaseModal extends Modal {
             }
             paymentMoment.add(i, 'months');
 
+            const dueDateMoment = paymentMoment.clone().date(card.dueDate);
+            const isPastDue = dueDateMoment.isBefore(moment(), 'day');
+
             const newTx: Transaction = {
                 id: `${purchaseGroupId}_${i + 1}`,
                 description: this.description,
                 amount: installmentAmount,
-                date: paymentMoment.clone().date(card.dueDate).format('YYYY-MM-DD'), // Bill due date
+                date: dueDateMoment.format('YYYY-MM-DD'), // Bill due date
                 category: 'Fatura de Cartão',
                 type: 'expense',
-                status: 'pending',
+                status: isPastDue ? 'paid' : 'pending',
                 isRecurring: false, // It's an installment, not recurring in the same way
                 isInstallment: true,
                 installmentOf: purchaseGroupId,
@@ -3024,10 +3131,11 @@ export class CardBillDetailModal extends Modal {
                 // Edit Button
                 const editBtn = actions.createEl('button', { cls: 'action-btn-icon' });
                 setIcon(editBtn, 'pencil');
-                editBtn.setAttr('title', 'Editar');
+                editBtn.setAttr('title', 'Editar Compra');
                 editBtn.onClickEvent((e) => {
                     e.stopPropagation();
-                    new EditTransactionModal(this.app, this.plugin, t, () => this.onOpen()).open();
+                    // Use AddPurchaseModal to edit the full purchase context
+                    new AddPurchaseModal(this.app, this.plugin, card, () => this.onOpen(), t).open();
                 });
 
 
@@ -3038,11 +3146,74 @@ export class CardBillDetailModal extends Modal {
                 deleteBtn.setAttr('title', 'Excluir');
                 deleteBtn.onClickEvent((e) => {
                     e.stopPropagation();
-                    if (confirm(`Excluir "${t.description}"?`)) {
-                        this.plugin.settings.transactions = this.plugin.settings.transactions.filter(x => x.id !== t.id);
-                        this.plugin.saveSettings();
-                        this.onOpen();
-                        this.onSubmit();
+
+                    // Check for Real Linkage (ID) OR Regex Pattern (Legacy/Orphan)
+                    const installmentMatch = t.description.match(/^(.*?)\s\((\d+)\/(\d+)\)$/);
+                    const isInstallment = !!t.installmentOf || !!installmentMatch;
+
+                    if (isInstallment) {
+                        const modal = new Modal(this.app);
+                        modal.contentEl.addClass('nexus-fintech-modal');
+                        modal.contentEl.createEl('h2', { text: 'Excluir Compra' });
+                        modal.contentEl.createEl('p', { text: `Deseja excluir apenas esta parcela ou toda a compra "${t.description.replace(/\s\(\d+\/\d+\)$/, '')}"?` });
+
+                        const btnContainer = modal.contentEl.createDiv({ cls: 'modal-footer', attr: { style: 'justify-content: space-between; gap: 10px;' } });
+
+                        // Handler for deleting just THIS one
+                        const handleDeleteSingle = async () => {
+                            this.plugin.settings.transactions = this.plugin.settings.transactions.filter(x => x.id !== t.id);
+                            await this.plugin.saveSettings();
+                            eventManager.emit('data-changed');
+                            modal.close();
+                            this.onOpen();
+                        };
+
+                        // Handler for deleting ALL
+                        const handleDeleteAll = async () => {
+                            if (t.installmentOf) {
+                                // Easy way: ID match
+                                this.plugin.settings.transactions = this.plugin.settings.transactions.filter(x => x.installmentOf !== t.installmentOf);
+                            } else if (installmentMatch) {
+                                // Hard way: Name Pattern match
+                                const baseName = installmentMatch[1]; // e.g. "Shoppe"
+                                // Safety: Filter by Card + BaseName + "(*/*)" pattern
+                                // We escape special regex chars in baseName just in case
+                                const escapedName = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const pattern = new RegExp(`^${escapedName}\\s\\(\\d+\\/\\d+\\)$`);
+
+                                this.plugin.settings.transactions = this.plugin.settings.transactions.filter(x => {
+                                    // Keep if it DOES NOT match criteria
+                                    if (x.cardId !== t.cardId) return true;
+                                    return !pattern.test(x.description);
+                                });
+                            }
+
+                            await this.plugin.saveSettings();
+                            eventManager.emit('data-changed');
+                            modal.close();
+                            this.onOpen();
+                        };
+
+                        new Setting(btnContainer)
+                            .addButton(btn => btn.setButtonText('Apenas esta').onClick(handleDeleteSingle));
+
+                        new Setting(btnContainer)
+                            .addButton(btn => btn.setButtonText('Todas as parcelas').setWarning().onClick(handleDeleteAll));
+
+                        modal.open();
+                    } else {
+                        // Standard delete logic...
+                        new ConfirmationModal(
+                            this.app,
+                            'Excluir Lançamento',
+                            `Tem certeza que deseja excluir "${t.description}"?`,
+                            async () => {
+                                this.plugin.settings.transactions = this.plugin.settings.transactions.filter(x => x.id !== t.id);
+                                await this.plugin.saveSettings();
+                                eventManager.emit('data-changed');
+                                this.onOpen();
+                            }
+                        ).open();
                     }
                 });
             });
@@ -3058,156 +3229,20 @@ export class CardBillDetailModal extends Modal {
             .setButtonText('+ Nova Despesa')
             .setCta()
             .onClick(() => {
-                const formDiv = contentEl.querySelector('.transaction-form-wrapper') as HTMLElement;
-                if (formDiv) {
-                    const isVisible = formDiv.style.display !== 'none';
-                    formDiv.style.display = isVisible ? 'none' : 'block';
-                    toggleFormBtn.setButtonText(isVisible ? '+ Nova Despesa' : 'Cancelar');
-                    toggleFormBtn.buttonEl.classList.toggle('mod-cta', isVisible); // Toggle CTA style
-                    if (!isVisible) toggleFormBtn.buttonEl.style.backgroundColor = 'var(--background-modifier-error)';
-                    else toggleFormBtn.buttonEl.style.removeProperty('background-color');
-                }
-            });
-
-        const formWrapper = contentEl.createDiv({ cls: 'transaction-form-wrapper', attr: { style: 'display: none; background: var(--background-secondary); padding: 15px; border-radius: 8px; margin-top: 10px;' } });
-
-        const formGrid = formWrapper.createDiv({ cls: 'transaction-form-grid' });
-
-        let desc = '';
-        let amount = 0;
-        let date = this.currentMonth.format('YYYY-MM-DD'); // Default to current view month
-        let category = 'Geral';
-        let isInstallment = false;
-        let installments = 1;
-
-        // Row 1: Description & Amount
-        const row1 = formGrid.createDiv({ cls: 'form-row form-row-col-2' });
-
-        new Setting(row1)
-            .setName('Descrição')
-            .addText(text => text.setPlaceholder('Ex: Uber').onChange(v => desc = v));
-
-        new Setting(row1)
-            .setName('Valor (R$)')
-            .addText(text => text.setPlaceholder('0.00').onChange(v => amount = parseFloat(v) || 0));
-
-        // Row 2: Date & Category
-        const row2 = formGrid.createDiv({ cls: 'form-row form-row-col-2' });
-
-        new Setting(row2)
-            .setName('Data da Compra')
-            .addText(text => {
-                text.inputEl.type = 'date';
-                text.setValue(date);
-                text.onChange(v => date = v);
-            });
-
-        new Setting(row2)
-            .setName('Categoria')
-            .addDropdown(drop => {
-                this.plugin.settings.categories.forEach(c => drop.addOption(c.name, c.name));
-                drop.setValue(category);
-                drop.onChange(v => category = v);
-            });
-
-        // Row 3: Installments
-        const row3 = formGrid.createDiv({ cls: 'form-row' });
-        const installmentSetting = new Setting(row3)
-            .setName('Parcelado?')
-            .addToggle(toggle => toggle.setValue(isInstallment).onChange(v => {
-                isInstallment = v;
-            }));
-
-        new Setting(row3)
-            .setName('Nº Parcelas')
-            .addText(text => {
-                text.inputEl.type = 'number';
-                text.setValue('1');
-                text.onChange(v => installments = parseInt(v) || 1);
-            });
-
-        // Add Button
-        const btnContainer = formWrapper.createDiv({ attr: { style: 'margin-top: 20px; display: flex; justify-content: flex-end;' } });
-        const addBtn = new ButtonComponent(btnContainer)
-            .setButtonText('Lançar Despesa')
-            .setCta()
-            .onClick(async () => {
-                if (!desc || amount <= 0) {
-                    new Notice('Preencha descrição e valor!');
-                    return;
-                }
-
-                // ✅ Usar função global calculatePaymentMonth refinada
-                // Ela já implementa a lógica correta de cartão + regra de fluxo de caixa
-
-                // If installment, we generate multiple transactions
-                if (isInstallment && installments > 1) {
-                    const baseDate = moment(date);
-                    const installmentValue = amount / installments; // Simple division
-
-                    for (let i = 0; i < installments; i++) {
-                        const tDate = baseDate.clone().add(i, 'months');
-                        const pMonth = calculatePaymentMonth(
-                            tDate.format('YYYY-MM-DD'),
-                            this.cardId,
-                            this.plugin.settings.creditCards
-                        );
-
-                        const newTx: Transaction = {
-                            id: uuidv4(),
-                            cardId: this.cardId,
-                            type: 'expense',
-                            description: `${desc} (${i + 1}/${installments})`,
-                            amount: installmentValue,
-                            date: tDate.format('YYYY-MM-DD'),
-                            paymentMonth: pMonth, // ADDED
-                            category: category,
-                            status: 'pending',
-                            isRecurring: false,
-                            isInstallment: true,
-                            totalInstallments: installments,
-                            installmentNumber: i + 1
-                        };
-                        this.plugin.settings.transactions.push(newTx);
-                        // Cards will be checked when user marks transaction as paid
-                    }
+                const card = this.plugin.settings.creditCards.find(c => c.id === this.cardId);
+                if (card) {
+                    new AddPurchaseModal(this.app, this.plugin, card, () => this.onOpen()).open();
                 } else {
-                    // Single transaction
-                    const pMonth = calculatePaymentMonth(
-                        date,
-                        this.cardId,
-                        this.plugin.settings.creditCards
-                    );
-
-                    const newTx: Transaction = {
-                        id: uuidv4(),
-                        cardId: this.cardId,
-                        type: 'expense',
-                        description: desc,
-                        amount: amount,
-                        date: date,
-                        paymentMonth: pMonth, // ADDED
-                        category: category,
-                        status: 'pending',
-                        isRecurring: false,
-                        isInstallment: false
-                    };
-                    this.plugin.settings.transactions.push(newTx);
+                    new Notice('Cartão não encontrado.');
                 }
-
-                await this.plugin.saveSettings();
-
-                // Date Check for User Feedback
-                const addedDate = moment(date);
-                if (!addedDate.isSame(this.currentMonth, 'month')) {
-                    new Notice(`Lançado para ${addedDate.format('MMM/YYYY')} (diferente da fatura atual)!`);
-                } else {
-                    // new Notice('Despesa lançada com sucesso!');
-                }
-
-                this.onOpen();
-                this.onSubmit();
             });
+
+        // (Inline Form removed in favor of dedicated Modal - Fixes Issue #1)
+    }
+
+    onClose() {
+        this.contentEl.empty();
+        this.onSubmit();
     }
 }
 

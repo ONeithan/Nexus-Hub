@@ -1,0 +1,64 @@
+/* Reworked styles for nexus-hub-account-item */
+.nexus-hub-account-item {
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: flex-start; /* Align content to the start */
+    align-items: stretch; /* Stretch items to fill width */
+    padding: 12px 20px;
+    margin: 0 -20px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    transition: background-color 0.2s;
+}
+
+.account-item-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px; /* Space between header and buttons */
+}
+
+.account-name-and-date {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow to take available space */
+}
+
+.account-amount {
+    font-weight: 600;
+    font-size: 1.1em;
+    white-space: nowrap; /* Prevent amount from wrapping */
+}
+
+/* Action buttons container - now a direct child of nexus-hub-account-item */
+.account-action-buttons {
+    display: flex;
+    flex-direction: row; /* Arrange buttons horizontally */
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+    gap: 8px; /* Space between buttons */
+    justify-content: flex-end; /* Align buttons to the right */
+    margin-top: 5px; /* Small space above buttons */
+}
+
+.action-btn {
+    background-color: var(--background-modifier-hover);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px; /* Slightly larger touch target */
+    min-height: 44px; /* Slightly larger touch target */
+}
+
+.action-btn:hover {
+    background-color: var(--background-modifier-active);
+    transform: translateY(-1px);
+}
+
+.action-btn svg {
+    width: 20px;
+    height: 20px;
+}
