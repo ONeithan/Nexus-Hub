@@ -9,7 +9,7 @@ O **Nexus Hub** não é apenas um plugin de finanças; é um sistema completo de
 
 ## 📱 Suporte Mobile (Novo na v1.0.1)
 
-O Nexus Hub agora é **totalmente compatível** com celulares e tablets iOS/Android!
+O Nexus Hub agora é **totalmente compatível** com celulares e tablets Android!
 A interface foi reconstruída para ser responsiva, com navegação otimizada e interações por toque.
 
 | Dashboard Mobile | Menu de Navegação |
