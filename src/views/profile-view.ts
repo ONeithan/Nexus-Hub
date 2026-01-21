@@ -29,6 +29,11 @@ export class ProfileView extends ItemView {
         container.empty();
         container.addClass("nexus-profile-v3");
 
+        // MOBILE FIX: Apply padding inline to bypass CSS conflicts
+        if ((this as any).app.isMobile) {
+            container.style.paddingBottom = '100px';
+        }
+
         this.injectStyles();
 
         // 1. Hero Card (Unified)
@@ -178,7 +183,25 @@ export class ProfileView extends ItemView {
 
     private createStatCard(container: HTMLElement, label: string, value: string, icon: string) {
         const card = container.createDiv({ cls: 'bento-card mini-stat' });
-        const iconDiv = card.createDiv({ cls: 'stat-icon' }); setIcon(iconDiv, icon);
+
+        // MOBILE FIX: Apply background inline
+        card.style.background = 'var(--background-secondary)';
+
+        const iconDiv = card.createDiv({ cls: 'stat-icon' });
+
+        // MOBILE FIX: Apply icon background inline
+        iconDiv.style.background = 'var(--background-secondary-alt)';
+        iconDiv.style.padding = '10px';
+        iconDiv.style.borderRadius = '12px';
+
+        setIcon(iconDiv, icon);
+
+        // MOBILE FIX: Apply icon color inline (SVG-safe)
+        const svgEl = iconDiv.querySelector('svg');
+        if (svgEl) {
+            svgEl.setAttribute('style', 'color: var(--interactive-accent);');
+        }
+
         const textDiv = card.createDiv({ cls: 'stat-info' });
         textDiv.createDiv({ cls: 'stat-value', text: value });
         textDiv.createDiv({ cls: 'stat-label', text: label });
@@ -335,14 +358,17 @@ export class ProfileView extends ItemView {
     }
 
     private injectStyles() {
-        const id = 'nexus-profile-styles-v4';
+        const id = 'nexus-profile-styles-v8'; // Force reload v8
         const existing = document.getElementById(id);
         if (existing) existing.remove();
 
         const s = document.head.createEl('style', { attr: { id } });
         s.textContent = `
             .nexus-profile-v3 {
-                padding: 20px; margin: 0; max-width: 100%;
+                padding: 20px;
+                padding-bottom: 100px; /* Extra space for mobile toolbar */
+                margin: 0;
+                max-width: 100%;
                 font-family: 'Inter', sans-serif;
                 background-color: var(--background-primary);
                 min-height: 100%;
@@ -378,22 +404,56 @@ export class ProfileView extends ItemView {
                 border-radius: 24px;
             }
             
+            
             .hero-content {
                 display: flex; align-items: center; gap: 40px; z-index: 2; width: 100%;
                 position: relative; 
             }
-            .hero-avatar-wrapper {
-                width: 140px; height: 140px;
-                border: 4px solid var(--background-primary); 
+            
+            /* Standardized Avatar Halo (matches Dashboard/Achievements) */
+            .avatar-halo {
+                position: relative;
+                width: 140px;
+                height: 140px;
                 border-radius: 50%;
+                border: 4px solid var(--interactive-accent);
+                box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
                 cursor: pointer;
                 transition: transform 0.3s;
-                overflow: hidden;
-                box-shadow: var(--shadow-l);
-                flex-shrink: 0; 
+                overflow: visible;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--background-secondary);
             }
-            .hero-avatar-wrapper:hover { transform: scale(1.05); }
-            .hero-avatar { width: 100%; height: 100%; object-fit: cover; }
+            .avatar-halo:hover { transform: scale(1.05); }
+            
+            .avatar-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 50%;
+            }
+            
+            .level-tag {
+                position: absolute;
+                bottom: -8px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #09090b;
+                color: var(--interactive-accent);
+                font-size: 11px;
+                font-weight: 800;
+                padding: 4px 12px;
+                border-radius: 20px;
+                border: 1px solid var(--interactive-accent);
+                z-index: 20;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                white-space: nowrap;
+            }
             
             /* Effects */
             .effect-shine { position: relative; overflow: hidden; }
@@ -456,8 +516,12 @@ export class ProfileView extends ItemView {
             /* Stats */
             .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
             .mini-stat { padding: 20px; display: flex; align-items: center; gap: 15px; }
-            .stat-icon { background: var(--background-modifier-form-field); padding: 10px; border-radius: 12px; }
-            .stat-icon svg { color: var(--text-muted); }
+            .stat-icon { 
+                background: var(--background-secondary-alt); /* Respects theme */
+                padding: 10px; 
+                border-radius: 12px; 
+            }
+            .stat-icon svg { color: var(--interactive-accent); } /* Theme accent color */
             .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-normal); }
             .stat-label { font-size: 0.8rem; color: var(--text-muted); }
             
@@ -568,7 +632,8 @@ export class ProfileView extends ItemView {
                     justify-content: center;
                     text-align: center;
                     gap: 5px;
-                    background-color: var(--background-primary); /* Stand out from bento card */
+                    background-color: var(--background-secondary-alt); /* Theme respected */
+                    border-radius: 12px;
                 }
                 .stat-icon { padding: 6px; border-radius: 8px; }
                 .stat-value { font-size: 1.1rem; }

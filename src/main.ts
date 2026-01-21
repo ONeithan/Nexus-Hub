@@ -315,7 +315,17 @@ export default class NexusHubPlugin extends Plugin {
 	}
 
 	async payFromEmergencyFund(id: string) { }
-	async handlePayment(t: Transaction) { }
+	async handlePayment(t: Transaction) {
+		// Import eventManager dynamically
+		const { eventManager } = await import('./helpers/EventManager');
+
+		// Check for card drop (pass transaction object)
+		await this.dropSystem.checkForDrop(t);
+
+		// Save and notify
+		await this.saveSettings();
+		eventManager.emit('data-changed');
+	}
 	async checkAndCompleteDebtGoal(t: Transaction) { }
 	private exportFullBackup() { }
 	private importFullBackup() { }

@@ -3,7 +3,7 @@
     display: none !important;
 }
 
-/* UNIVERSAL INPUT FIX: Override any hardcoded black backgrounds */
+/* UNIVERSAL INPUT FIX: Override any hardcoded black backgrounds + Prevent iOS zoom */
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -17,6 +17,8 @@ textarea {
     background-color: var(--background-modifier-form-field) !important;
     color: var(--text-normal) !important;
     border: 1px solid var(--background-modifier-border) !important;
+    font-size: 16px !important;
+    /* Prevent iOS auto-zoom */
 }
 
 input:focus,
@@ -38,29 +40,34 @@ textarea:focus {
     gap: 25px;
     height: 100%;
     padding: 0 15px 15px;
-
-    /* DEFENSIVE CSS SHIELD */
     box-sizing: border-box;
-    max-width: 100%;
+    /* Prevent horizontal scroll */
+    max-width: 100vw;
     overflow-x: hidden;
-    /* Prevent horizontal scroll triggers */
-    width: 100%;
 }
 
-/* Universal Box Sizing for Plugin Scope */
-.nexus-hub-view *,
-.nexus-hub-view *::before,
-.nexus-hub-view *::after {
-    box-sizing: border-box;
+/* Mobile: Switch to single column stack */
+@media screen and (max-width: 768px) {
+    .nexus-hub-grid-container {
+        display: flex;
+        /* Or grid with 1fr */
+        flex-direction: column;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "header"
+            "summary"
+            "actions"
+            "main";
+        padding: 10px;
+        gap: 15px;
+    }
 }
 
 .grid-area {
     background-color: var(--background-secondary);
     border-radius: 12px;
     padding: 20px;
-    /* Defensive Inner Protection */
-    max-width: 100%;
-    overflow-wrap: break-word;
 }
 
 /* Atribuição das áreas */
@@ -127,10 +134,20 @@ textarea:focus {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    /* Desktop: 3 columns (Salário, Extras, Total) */
     background-color: var(--background-primary);
     padding: 8px;
     border-radius: 8px;
     font-size: var(--font-ui-small);
+}
+
+/* Mobile: Single column for better readability */
+@media screen and (max-width: 768px) {
+    .income-summary-header {
+        grid-template-columns: 1fr;
+        /* Mobile: Single column */
+        gap: 4px;
+    }
 }
 
 .income-summary-item {
@@ -143,6 +160,13 @@ textarea:focus {
 
 .income-summary-header>.income-summary-item:last-child {
     border-right: none;
+}
+
+/* Mobile: Remove borders for cleaner 2x2 grid */
+@media screen and (max-width: 768px) {
+    .income-summary-item {
+        border-right: none;
+    }
 }
 
 .income-summary-label {
@@ -162,6 +186,22 @@ textarea:focus {
 /* Estilos dos Cards de Resumo */
 .grid-summary .stat-card-container {
     display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* Desktop: 4 columns */
+    gap: 20px;
+}
+
+/* Mobile: 2x2 grid for stat cards */
+@media screen and (max-width: 768px) {
+    .grid-summary .stat-card-container {
+        grid-template-columns: 1fr;
+        /* Switch to 1 column to fit larger values */
+        /* Mobile: 1 column */
+        gap: 10px;
+    }
+}
+
+.grid-summary .stat-card-container-old-rule {
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
 }
@@ -192,6 +232,26 @@ textarea:focus {
 .stat-label {
     font-size: var(--font-ui-small);
     color: var(--text-muted);
+    /* Ensure label wraps if needed */
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* Mobile: Prevent horizontal overflow from huge numbers */
+@media screen and (max-width: 768px) {
+    .stat-value {
+        font-size: 1.4em;
+        /* Smaller on mobile */
+        word-wrap: break-word;
+        /* Wrap long numbers */
+        overflow-wrap: break-word;
+    }
+
+    .income-summary-value {
+        font-size: 1.1em;
+        word-wrap: break-word;
+    }
 }
 
 /* Estilos da Coluna de Ações */
@@ -298,6 +358,39 @@ textarea:focus {
     margin: 0 -20px;
     border-bottom: 1px solid var(--background-modifier-border);
     transition: background-color 0.2s;
+}
+
+/* Mobile: Remove negative margins to prevent overflow/zoom issues */
+@media screen and (max-width: 768px) {
+    .nexus-hub-account-item {
+        margin: 0;
+        /* Align with container */
+        padding: 12px 10px;
+        /* Reduced padding */
+        flex-wrap: wrap;
+        /* Allow wrapping if needed */
+        gap: 10px;
+    }
+
+    .account-left-panel {
+        width: 100%;
+        /* Full width for name/date */
+        justify-content: flex-start;
+    }
+
+    .account-right-panel {
+        width: 100%;
+        /* Full width for amount/actions */
+        justify-content: space-between;
+        /* Spread amount and buttons */
+        margin-left: 40px;
+        /* Indent to align with text (skip checkbox/icon) */
+    }
+
+    .account-action-buttons {
+        margin-left: 0 !important;
+        /* Reset margin since it's on new line/space-between */
+    }
 }
 
 .accounts-list-container .nexus-hub-account-item:first-child {

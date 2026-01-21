@@ -109,8 +109,8 @@ export class ReportView extends ItemView {
                 }
                 
                 .chart-wrapper {
-                    /* Restore height on mobile, but ensure width is fine */
-                    height: 300px !important; 
+                    /* Flexible height on mobile */
+                    height: 300px !important;
                     position: relative;
                 }
             }
@@ -214,15 +214,15 @@ export class ReportView extends ItemView {
                 word-wrap: break-word;
             }
             .kpi-value {
-                font-size: 1.4em;
+                font-size: 1.2em; /* Slightly smaller for mobile safety */
                 font-weight: 700;
                 color: var(--text-normal);
                 margin-bottom: 4px;
-                /* Crucial for preventing overflow */
-                white-space: nowrap; 
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
+                /* Allow wrapping for long numbers */
+                white-space: normal !important; 
+                word-wrap: break-word !important;
+                overflow: visible !important;
+                line-height: 1.2;
             }
             .kpi-label-container {
                 display: flex;
@@ -230,7 +230,7 @@ export class ReportView extends ItemView {
                 justify-content: center;
                 margin-top: 5px;
                 color: var(--text-muted);
-                font-size: 0.9em;
+                font-size: 0.8em; /* Slightly smaller label */
             }
             .kpi-label-text {
                 font-weight: 500;
@@ -320,10 +320,10 @@ export class ReportView extends ItemView {
             demoBtn.toggleClass('mod-cta', this.isDemoMode);
 
             if (this.isDemoMode) {
-                // Force to 'all_time' to ensure all generated history (past 12 months) is visible
+                // Force to 'all_time' but with sensible range for demo data (past 1 year)
                 periodSelect.value = 'all_time';
-                this.startDate = moment(new Date(0));
-                this.endDate = moment().add(2, 'years');
+                this.startDate = moment().subtract(13, 'months').startOf('month'); // Slightly more than 1 year to cover full range
+                this.endDate = moment().add(1, 'month').endOf('month');
                 this.renderDemoReports();
             } else {
                 periodSelect.value = 'this_month'; // Reset to default
@@ -624,7 +624,7 @@ export class ReportView extends ItemView {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right' },
+                    legend: { position: 'bottom' }, // Bottom is better for mobile
                     tooltip: {
                         callbacks: {
                             label: function (context: TooltipItem<'doughnut'>) {
