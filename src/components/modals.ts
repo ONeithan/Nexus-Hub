@@ -3090,27 +3090,10 @@ export class CardBillDetailModal extends Modal {
         // Calculate Totals
         const targetMonth = this.currentMonth.format('YYYY-MM');
 
-        // DEBUG LOGGING
-        console.log('[Nexus Debug] Filtering Transactions:', {
-            targetMonth,
-            totalTx: this.plugin.settings.transactions.length,
-            cardId: this.cardId
-        });
-
         const transactions = this.plugin.settings.transactions.filter(t =>
             t.cardId === this.cardId &&
             (t.paymentMonth ? t.paymentMonth === targetMonth : moment(t.date).isSame(this.currentMonth, 'month'))
         );
-
-        if (transactions.length === 0) {
-            const candidates = this.plugin.settings.transactions.filter(t => t.cardId === this.cardId);
-            console.log('[Nexus Debug] Candidates found for this card (but rejected by date filter):', candidates.map(t => ({
-                desc: t.description,
-                paymentMonth: t.paymentMonth,
-                date: t.date,
-                matchesTarget: t.paymentMonth === targetMonth
-            })));
-        }
 
         const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
