@@ -2813,6 +2813,12 @@ export class AddPurchaseModal extends Modal {
             paymentMoment.add(i, 'months');
 
             const dueDateMoment = paymentMoment.clone().date(card.dueDate);
+
+            // Fix: If due day is earlier than closing day, it implies due date is in the NEXT month relative to the competence month
+            if (card.dueDate < card.closingDay) {
+                dueDateMoment.add(1, 'month');
+            }
+
             const isPastDue = dueDateMoment.isBefore(moment(), 'day');
 
             const newTx: Transaction = {
@@ -3082,10 +3088,29 @@ export class CardBillDetailModal extends Modal {
         leftGroup.createEl('h2', { text: `Fatura: ${card.name} - ${this.currentMonth.format('MMM/YYYY')}`, attr: { style: 'margin: 0;' } });
 
         // Calculate Totals
+        const targetMonth = this.currentMonth.format('YYYY-MM');
+
+        // DEBUG LOGGING
+        console.log('[Nexus Debug] Filtering Transactions:', {
+            targetMonth,
+            totalTx: this.plugin.settings.transactions.length,
+            cardId: this.cardId
+        });
+
         const transactions = this.plugin.settings.transactions.filter(t =>
             t.cardId === this.cardId &&
-            moment(t.date).isSame(this.currentMonth, 'month')
+            (t.paymentMonth ? t.paymentMonth === targetMonth : moment(t.date).isSame(this.currentMonth, 'month'))
         );
+
+        if (transactions.length === 0) {
+            const candidates = this.plugin.settings.transactions.filter(t => t.cardId === this.cardId);
+            console.log('[Nexus Debug] Candidates found for this card (but rejected by date filter):', candidates.map(t => ({
+                desc: t.description,
+                paymentMonth: t.paymentMonth,
+                date: t.date,
+                matchesTarget: t.paymentMonth === targetMonth
+            })));
+        }
 
         const total = transactions.reduce((sum, t) => sum + t.amount, 0);
 
