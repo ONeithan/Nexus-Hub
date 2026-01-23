@@ -1,9 +1,9 @@
 {
 	"id": "nexus-hub",
 	"name": "Nexus Hub",
-	"version": "1.0.2",
+	"version": "1.0.0",
 	"minAppVersion": "1.5.0",
-	"description": "Um dashboard financeiro completo para o você. Acompanhe despesas, gerencie orçamentos, defina metas e ganhe insights profundos sobre sua vida financeira.",
+	"description": "A complete financial dashboard. Track expenses, manage budgets, set goals, and gain deep insights into your financial life.",
 	"author": "ONeithan",
 	"authorUrl": "https://github.com/ONeithan",
 	"isDesktopOnly": false

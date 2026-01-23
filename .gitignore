@@ -38,3 +38,6 @@ create_release.bat
 
 # OS files
 Thumbs.db
+
+# Documentation excluded from git
+GUIA_GITHUB.md
