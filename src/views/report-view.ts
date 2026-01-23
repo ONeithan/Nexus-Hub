@@ -69,198 +69,46 @@ export class ReportView extends ItemView {
         this.contentEl.empty();
         this.contentEl.addClass("nexus-reports-container");
 
-        const styleEl = this.contentEl.createEl('style');
-        styleEl.innerHTML = `
-/* CSS for Report View */
-            .nexus-reports-container {
-                display: flex;
-                flex-direction: column;
-                padding: 10px; 
-                overflow-y: auto;
-                height: 100%;
-                box-sizing: border-box;
-            }
-            .report-main-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap;
-                padding-bottom: 10px;
-                margin-bottom: 10px;
-                border-bottom: 1px solid var(--background-modifier-border);
-            }
-            
-            /* MOBILE SPECIFIC RULES (INJECTED) */
-            @media screen and (max-width: 768px) {
-                .dashboard-grid-container {
-                    display: flex !important;
-                    flex-direction: column !important;
-                }
-                
-                .kpi-grid {
-                    /* On mobile, 2 columns for KPIs is better than 1 huge list, but let's see. 
-                       2 columns is good for numbers. */
-                    grid-template-columns: 1fr 1fr !important; 
-                    gap: 10px !important;
-                }
-                
-                .insights-card ul {
-                    padding-left: 0 !important;
-                }
-                
-                .chart-wrapper {
-                    /* Flexible height on mobile */
-                    height: 300px !important;
-                    position: relative;
-                }
-            }
-
-            .report-title-group {
-                display: flex;
-                align-items: center;
-                gap: 15px;
-                flex-grow: 1;
-            }
-            /* ... (h2 styles) ... */
-            .tabs-headers {
-                display: flex;
-                border-bottom: 1px solid var(--background-modifier-border);
-                margin-bottom: 15px; 
-                overflow-x: auto; /* Allow scroll on small screens */
-                white-space: nowrap; /* Prevent wrapping */
-            }
-            .tab-header {
-                padding: 10px 15px;
-                cursor: pointer;
-                color: var(--text-muted);
-                font-size: 1em;
-                font-weight: 500;
-                transition: color 0.2s, border-bottom-color 0.2s;
-                border-bottom: 2px solid transparent;
-            }
-            .tab-header:hover {
-                color: var(--text-normal);
-            }
-            .tab-header.is-active {
-                color: var(--interactive-accent);
-                border-bottom-color: var(--interactive-accent);
-            }
-            .tabs-content {
-                flex-grow: 1;
-            }
-            .tab-content-item {
-                display: none;
-            }
-            .tab-content-item:not(.is-hidden) {
-                display: block;
-            }
-            .report-explanation {
-                font-size: 0.9em;
-                color: var(--text-muted);
-                margin-bottom: 20px;
-                line-height: 1.5;
-            }
-            .insights-card ul {
-                list-style: none;
-                padding: 0;
-            }
-            .insights-card li {
-                display: flex;
-                align-items: flex-start;
-                margin-bottom: 10px;
-                color: var(--text-normal);
-            }
-            .insight-icon {
-                margin-right: 10px;
-                color: var(--interactive-accent);
-            }
-            .dashboard-grid-container {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: auto;
-                grid-template-areas:
-                    "kpi kpi"
-                    "category-chart flow-chart";
-                gap: 20px;
-                width: 100%;
-            }
-            .kpi-area {
-                grid-area: kpi;
-            }
-            .category-chart-area {
-                grid-area: category-chart;
-            }
-            .flow-chart-area {
-                grid-area: flow-chart;
-            }
-            .kpi-grid {
-                 display: grid;
-                 /* Desktop Default: 3 columns */
-                 grid-template-columns: repeat(3, 1fr); 
-                 gap: 15px;
-                 width: 100%;
-            }
-            .kpi-item {
-                background-color: var(--background-primary);
-                padding: 15px;
-                border-radius: 10px;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                 /* Prevent overflow */
-                min-width: 0; 
-                word-wrap: break-word;
-            }
-            .kpi-value {
-                font-size: 1.2em; /* Slightly smaller for mobile safety */
-                font-weight: 700;
-                color: var(--text-normal);
-                margin-bottom: 4px;
-                /* Allow wrapping for long numbers */
-                white-space: normal !important; 
-                word-wrap: break-word !important;
-                overflow: visible !important;
-                line-height: 1.2;
-            }
-            .kpi-label-container {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-top: 5px;
-                color: var(--text-muted);
-                font-size: 0.8em; /* Slightly smaller label */
-            }
-            .kpi-label-text {
-                font-weight: 500;
-            }
-        `;
+        // CSS moved to styles.css for compliance
 
         // Main Header
         const headerEl = this.contentEl.createDiv({ cls: "report-main-header" });
 
         // Title and Help Button
         const titleGroup = headerEl.createDiv({ cls: "report-title-group" });
-        // Using createEl('h2') instead of Setting() to avoid excessive padding/margins
         titleGroup.createEl('h2', { text: 'Relatórios Financeiros' });
 
-        const helpText = `
-            <h3>Central de Relatórios</h3>
-            <p>Acompanhe a saúde financeira completa através de 4 visões detalhadas:</p>
-            <ul>
-                <li><b>Dashboard:</b> Visão geral do mês. Mostra saldo, renda, despesas e taxa de poupança (quanto % você guardou).</li>
-                <li><b>Fluxo de Dinheiro:</b> Gráfico Sankey e Barras que mostram para onde seu dinheiro vai. Mostra o caminho da Renda -> Despesas -> Sobras.</li>
-                <li><b>Histórico & Patrimônio:</b> Acompanhe a evolução da sua riqueza.
-                    <ul>
-                        <li><i>Patrimônio Líquido:</i> Soma de tudo que você tem guardado (Reserva de Emergência + Metas de Economia).</li>
-                        <li><i>Fundo de Emergência:</i> Histórico específico da sua reserva principal.</li>
-                    </ul>
-                </li>
-                <li><b>Insights:</b> O sistema analisa seus dados e dá dicas automáticas (ex: se gastou muito em 'Lazer' ou se sua poupança está boa).</li>
-            </ul>
-        `;
-        addHelpButton(this.app, titleGroup, 'Entendendo os Relatórios', helpText); // Passed titleGroup directly
+        // Compliance: Use DOM creation callback instead of HTML string
+        const renderHelp = (container: HTMLElement) => {
+            container.createEl('h3', { text: 'Central de Relatórios' });
+            container.createEl('p', { text: 'Acompanhe a saúde financeira completa através de 4 visões detalhadas:' });
+            const ul = container.createEl('ul');
+
+            const li1 = ul.createEl('li');
+            li1.createEl('b', { text: 'Dashboard: ' });
+            li1.createSpan({ text: 'Visão geral do mês. Mostra saldo, renda, despesas e taxa de poupança (quanto % você guardou).' });
+
+            const li2 = ul.createEl('li');
+            li2.createEl('b', { text: 'Fluxo de Dinheiro: ' });
+            li2.createSpan({ text: 'Gráfico Sankey e Barras que mostram para onde seu dinheiro vai. Mostra o caminho da Renda -> Despesas -> Sobras.' });
+
+            const li3 = ul.createEl('li');
+            li3.createEl('b', { text: 'Histórico & Patrimônio: ' });
+            li3.createSpan({ text: 'Acompanhe a evolução da sua riqueza.' });
+            const subUl = li3.createEl('ul');
+            const subLi1 = subUl.createEl('li');
+            subLi1.createEl('i', { text: 'Patrimônio Líquido: ' });
+            subLi1.createSpan({ text: 'Soma de tudo que você tem guardado (Reserva de Emergência + Metas de Economia).' });
+            const subLi2 = subUl.createEl('li');
+            subLi2.createEl('i', { text: 'Fundo de Emergência: ' });
+            subLi2.createSpan({ text: 'Histórico específico da sua reserva principal.' });
+
+            const li4 = ul.createEl('li');
+            li4.createEl('b', { text: 'Insights: ' });
+            li4.createSpan({ text: "O sistema analisa seus dados e dá dicas automáticas (ex: se gastou muito em 'Lazer' ou se sua poupança está boa)." });
+        };
+
+        addHelpButton(this.app, titleGroup, 'Entendendo os Relatórios', renderHelp);
 
         // Controls Group - logic moved to renderDateFilters for better layout control
         const controlsGroup = headerEl.createDiv({ cls: "report-controls-group" });

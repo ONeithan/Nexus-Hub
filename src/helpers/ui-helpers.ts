@@ -189,14 +189,9 @@ export class InfoModal extends Modal {
 
 
         if (typeof this.content === 'string') {
-            // Check if content looks like HTML
-            if (this.content.trim().startsWith('<')) {
-                const wrapper = contentContainer.createDiv();
-                wrapper.innerHTML = this.content;
-            } else {
-                // Use MarkdownRenderer to correctly parse markdown syntax
-                MarkdownRenderer.renderMarkdown(this.content, contentContainer, '', null as unknown as Component);
-            }
+            // Always use MarkdownRenderer for strings. It handles basic HTML tags safely if needed,
+            // but prefers Markdown. This avoids the innerHTML flag.
+            MarkdownRenderer.render(this.app, this.content, contentContainer, '', this as unknown as Component);
         } else {
             this.content(contentContainer);
         }
