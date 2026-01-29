@@ -2080,7 +2080,9 @@ export class AddTransactionModal extends Modal {
     // Form state
     private description: string = '';
     private amount: number = 0;
+
     private date: string = moment().format('YYYY-MM-DD');
+    private dueDate: string = ''; // Data de Vencimento Opicional
     private category: string = '';
     private type: 'income' | 'expense' = 'expense';
     private status: 'paid' | 'pending' = 'pending';
@@ -2113,6 +2115,7 @@ export class AddTransactionModal extends Modal {
             // If editing, try to infer dayOfMonth from date
             this.dayOfMonth = moment(transaction.date).date();
             this.generationDate = (transaction as any).generationDate || moment().add(5, 'years').format('YYYY-MM-DD');
+            this.dueDate = transaction.dueDate || '';
         } else {
             this.date = this.currentMonth.format('YYYY-MM-DD');
             this.dayOfMonth = this.currentMonth.date();
@@ -2406,7 +2409,8 @@ export class AddTransactionModal extends Modal {
         createDropdown('Tipo', 'Clique para escolher uma opção', [['expense', 'Despesa'], ['income', 'Receita']], this.type, value => this.type = value);
         createDropdown('Status', 'Clique para escolher uma opção', [['pending', 'Pendente'], ['paid', 'Paga']], this.status, value => this.status = value);
         if (!this.isRecurring || this.transaction) {
-            createInput('Data da Transação', '', this.date, value => this.date = value, { type: 'date' });
+            createInput('Data da Compra', '', this.date, value => this.date = value, { type: 'date' });
+            createInput('Data de Vencimento (Opcional)', '', this.dueDate, value => this.dueDate = value, { type: 'date' });
         }
     }
 
@@ -2462,7 +2466,9 @@ export class AddTransactionModal extends Modal {
                         type: this.type,
                         status: this.status,
                         isRecurring: this.isRecurring,
-                        endDate: this.endDate
+
+                        endDate: this.endDate,
+                        dueDate: this.dueDate
                     };
                 }
             }
@@ -2570,6 +2576,7 @@ export class AddTransactionModal extends Modal {
                     isRecurring: false,
                     isInstallment: false,
                     paymentMonth: moment(this.date).format('YYYY-MM'),
+                    dueDate: this.dueDate
                 };
                 this.plugin.settings.transactions.push(newTransaction);
             }

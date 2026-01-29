@@ -492,7 +492,7 @@ export class NexusHubView extends ItemView {
 
         const extraIncomeContainer = incomeSummaryHeader.createDiv({ cls: 'income-summary-item' });
 
-        extraIncomeContainer.createDiv({ cls: 'income-summary-label', text: 'Extras' });
+        extraIncomeContainer.createDiv({ cls: 'income-summary-label', text: 'Renda Extra' });
 
         this.extraIncomeEl = extraIncomeContainer.createDiv({ cls: 'income-summary-value' });
 

@@ -10,6 +10,7 @@ export interface Transaction {
     description: string;
     amount: number;
     date: string; // YYYY-MM-DD
+    dueDate?: string; // YYYY-MM-DD (Data de Vencimento)
     category: string;
     type: 'income' | 'expense';
     status: 'pending' | 'paid';
