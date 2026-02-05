@@ -2643,7 +2643,8 @@ export class AddPurchaseModal extends Modal {
     private totalAmount: number = 0;
     private purchaseDate: string = moment().format('YYYY-MM-DD');
     private installments: number = 1;
-    private category: string = '';
+    private category: string = 'Fatura de Cartão'; // Fixed default as requested
+    private subcategory: string = ''; // New Subcategory
     private isSubscription: boolean = false; // New toggle state
 
     constructor(app: App, plugin: NexusHubPlugin, card: CreditCard, onSubmit: () => void, transaction?: Transaction) {
@@ -2653,8 +2654,13 @@ export class AddPurchaseModal extends Modal {
         this.onSubmit = onSubmit;
         this.onSubmit = onSubmit;
         this.transaction = transaction;
-        // Default category empty to encourage selection, or standard default
-        this.category = transaction ? transaction.category : '';
+
+        if (transaction) {
+            this.category = transaction.category; // Keep existing if editing
+            this.subcategory = transaction.subcategory || '';
+        } else {
+            this.category = 'Fatura de Cartão'; // Default for new
+        }
 
         if (transaction) {
             this.description = transaction.description.replace(/\s\(\d+\/\d+\)$/, ''); // Remove (1/N) suffix
@@ -2788,7 +2794,22 @@ export class AddPurchaseModal extends Modal {
         installInput.value = String(this.installments);
         installInput.oninput = () => this.installments = Math.max(1, Number(installInput.value) || 1);
 
+        // --- Categories ---
+        // 1. Primary Category (Defaults to Fatura de Cartão)
+        // We allow changing it, but user requested it to be "Default".
         renderCategoryDropdown(container, this.plugin, () => this.category, (value) => this.category = value);
+
+        // 2. Subcategory (New request)
+        // "Create a subcategory to add another category"
+        const subCatContainer = container.createDiv({ cls: 'form-group' });
+        subCatContainer.createEl('label', { text: 'Subcategoria / Detalhe (Opcional)' });
+        subCatContainer.createEl('small', {
+            text: 'Selecione a categoria real (ex: Mercado) para aparecer corretamente no relatório.',
+            attr: { style: 'display: block; color: var(--text-muted); margin-bottom: 5px;' }
+        });
+
+        // Reuse the category dropdown logic but bind to subcategory
+        renderCategoryDropdown(subCatContainer, this.plugin, () => this.subcategory, (value) => this.subcategory = value);
     }
 
     async savePurchase() {
@@ -2859,11 +2880,15 @@ export class AddPurchaseModal extends Modal {
                     billDate.add(1, 'month');
                 }
                 // Bill Date is the DUE DATE of that invoice
-                billDate.date(card.dueDate);
-                // Fix: If due day < closing day, logic implies next month too? 
-                // (Reuse logic from standard installment)
+                // FIX: Clamp day to avoid overflow
+                const maxDay = billDate.daysInMonth();
+                billDate.date(Math.min(card.dueDate, maxDay));
+
                 if (card.dueDate < card.closingDay) {
                     billDate.add(1, 'month');
+                    // Re-clamp
+                    const newMax = billDate.daysInMonth();
+                    billDate.date(Math.min(card.dueDate, newMax));
                 }
 
                 const isPastDue = billDate.isBefore(moment(), 'day');
@@ -2874,6 +2899,7 @@ export class AddPurchaseModal extends Modal {
                     amount: this.totalAmount, // Full amount each month
                     date: billDate.format('YYYY-MM-DD'), // Bill due date
                     category: this.category,
+                    subcategory: this.subcategory, // Save Subcategory
                     type: 'expense',
                     status: isPastDue ? 'paid' : 'pending',
                     isRecurring: true, // Marked as recurring
@@ -2900,10 +2926,16 @@ export class AddPurchaseModal extends Modal {
                 }
                 paymentMoment.add(i, 'months');
 
-                const dueDateMoment = paymentMoment.clone().date(card.dueDate);
+                const dueDateMoment = paymentMoment.clone();
+                // FIX: Clamp day to avoid overflow
+                const maxDay = dueDateMoment.daysInMonth();
+                dueDateMoment.date(Math.min(card.dueDate, maxDay));
 
                 if (card.dueDate < card.closingDay) {
                     dueDateMoment.add(1, 'month');
+                    // Re-clamp
+                    const newMax = dueDateMoment.daysInMonth();
+                    dueDateMoment.date(Math.min(card.dueDate, newMax));
                 }
 
                 const isPastDue = dueDateMoment.isBefore(moment(), 'day');
@@ -2914,6 +2946,7 @@ export class AddPurchaseModal extends Modal {
                     amount: installmentAmount,
                     date: dueDateMoment.format('YYYY-MM-DD'),
                     category: this.category,
+                    subcategory: this.subcategory, // Save Subcategory
                     type: 'expense', // Always expense for purchases
                     status: isPastDue ? 'paid' : 'pending',
                     isRecurring: false,

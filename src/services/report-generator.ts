@@ -102,8 +102,9 @@ export class ReportGenerator {
         relevantTransactions
             .filter((transaction: Transaction) => transaction.type === 'expense')
             .forEach((transaction: Transaction) => {
-                const currentAmount = spendingByCategory.get(transaction.category) || 0;
-                spendingByCategory.set(transaction.category, currentAmount + transaction.amount);
+                const categoryName = transaction.subcategory || transaction.category;
+                const currentAmount = spendingByCategory.get(categoryName) || 0;
+                spendingByCategory.set(categoryName, currentAmount + transaction.amount);
             });
 
         const sankeyData = Array.from(spendingByCategory.entries()).map(([category, amount]) => ({
@@ -501,8 +502,9 @@ export class ReportGenerator {
         paidTransactions
             .filter((transaction: Transaction) => transaction.type === 'expense')
             .forEach((transaction: Transaction) => {
-                const currentAmount = spendingByCategory.get(transaction.category) || 0;
-                spendingByCategory.set(transaction.category, currentAmount + transaction.amount);
+                const categoryName = transaction.subcategory || transaction.category;
+                const currentAmount = spendingByCategory.get(categoryName) || 0;
+                spendingByCategory.set(categoryName, currentAmount + transaction.amount);
             });
 
         return {

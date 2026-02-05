@@ -36,8 +36,12 @@ export function calculateCardBill(allTransactions: Transaction[], card: CreditCa
     const closingDayInt = parseInt(String(card.closingDay), 10);
     const dueDayInt = parseInt(String(card.dueDate), 10);
 
-    const closingDate = month.clone().date(closingDayInt);
-    const dueDate = month.clone().date(dueDayInt);
+    // FIX: Clamp day to avoid overflow (e.g. Feb 30 -> Mar 2)
+    const closingDate = month.clone();
+    closingDate.date(Math.min(closingDayInt, closingDate.daysInMonth()));
+
+    const dueDate = month.clone();
+    dueDate.date(Math.min(dueDayInt, dueDate.daysInMonth()));
 
     // Debug: Log unexpected date shifts
     // console.log(`[Nexus Hub Debug] Bill Calc: Card=${card.name} Closing=${closingDayInt} Due=${dueDayInt}`);

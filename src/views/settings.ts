@@ -12,6 +12,7 @@ export interface Transaction {
     date: string; // YYYY-MM-DD
     dueDate?: string; // YYYY-MM-DD (Data de Vencimento)
     category: string;
+    subcategory?: string; // New field for detailed reporting (e.g. "Mercado" inside "Fatura de Cartão")
     type: 'income' | 'expense';
     status: 'pending' | 'paid';
     isRecurring: boolean;
