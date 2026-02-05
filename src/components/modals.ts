@@ -4766,10 +4766,85 @@ export class RegenerateRecurrencesModal extends Modal {
             }
         }
 
+        // 3. Special Salary Repair (Enforce Settings)
+        addedCount += await this.repairSalary();
+
         await this.plugin.saveSettings();
         eventManager.emit('data-changed');
         new Notice(`Reparo concluído! ${addedCount} transações ausentes foram geradas.`);
     }
+
+    async repairSalary(): Promise<number> {
+        let added = 0;
+        const s = this.plugin.settings;
+        const frequency = s.salaryFrequency;
+        const limitDate = moment().add(5, 'years');
+        const cursor = moment().startOf('month'); // Start from this month (or check history? User said "February still has problem", let's check current year)
+
+        // Go back to January of current year to catch recent bugs
+        const startCheck = moment().startOf('year');
+
+        let loopCursor = startCheck.clone();
+
+        while (loopCursor.isBefore(limitDate)) {
+            // Payday 1
+            await this.ensureSalaryForMonth(loopCursor, s.salaryPayday1, 1);
+
+            // Payday 2 (if bi-weekly)
+            if (frequency === 'bi-weekly' && s.salaryPayday2) {
+                await this.ensureSalaryForMonth(loopCursor, s.salaryPayday2, 2);
+            }
+
+            loopCursor.add(1, 'month');
+        }
+        return added;
+    }
+
+    async ensureSalaryForMonth(monthDate: moment.Moment, day: number, installNum: number) {
+        // Construct Ideal Date witrh Clamping
+        const targetDate = monthDate.clone();
+        const maxDay = targetDate.daysInMonth();
+        targetDate.date(Math.min(day, maxDay));
+
+        const paymentMonthStr = targetDate.format('YYYY-MM');
+
+        // Check if any Income exists for this month with similar characteristics
+        // Heuristic: Category 'Salário' OR 'Renda Extra' or Description 'Salário'
+        const exists = this.plugin.settings.transactions.some(t => {
+            if (t.type !== 'income') return false;
+            // Check Payment Month explicitly
+            if (t.paymentMonth === paymentMonthStr) {
+                // Determine if it matches the "slot" (roughly same day)
+                const tDay = moment(t.date).date();
+                // Tolerance of 5 days? Or just check count?
+                // If bi-weekly, we need 2. 
+                // Simple check: Is the transaction date close to our target date?
+                return Math.abs(tDay - targetDate.date()) < 5;
+            }
+            return false;
+        });
+
+        if (!exists) {
+            // Create Salary
+            const newTx: Transaction = {
+                id: `repaired_salary_${targetDate.format('YYYYMMDD')}_${installNum}`,
+                description: `Salário (${installNum}/${this.plugin.settings.salaryFrequency === 'bi-weekly' ? 2 : 1})`,
+                amount: this.plugin.settings.salarioLiquido > 0 ? (this.plugin.settings.salaryFrequency === 'bi-weekly' ? this.plugin.settings.salarioLiquido / 2 : this.plugin.settings.salarioLiquido) : 0,
+                date: targetDate.format('YYYY-MM-DD'),
+                category: 'Salário',
+                type: 'income',
+                status: 'pending',
+                isRecurring: true,
+                paymentMonth: paymentMonthStr,
+                isInstallment: false
+            };
+            this.plugin.settings.transactions.push(newTx);
+            return 1;
+        }
+        return 0;
+    }
+
+
 
     onClose() {
         this.contentEl.empty();
