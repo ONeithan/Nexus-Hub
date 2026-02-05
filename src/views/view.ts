@@ -20,7 +20,8 @@ import {
     NexusScoreHistoryModal,
     CreateEditGoalModal,
     ManageCategoriesModal,
-    ProfilePictureModal
+    ProfilePictureModal,
+    RegenerateRecurrencesModal // ADDED: New Modal for Fixing Recurrences
 } from "../components/modals";
 // import { ConfirmationModal } from "../helpers/ui-helpers"; // Removed to avoid duplicate
 import { formatAsCurrency, calculateCardBill } from "../helpers/helpers";

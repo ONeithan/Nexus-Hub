@@ -2644,14 +2644,17 @@ export class AddPurchaseModal extends Modal {
     private purchaseDate: string = moment().format('YYYY-MM-DD');
     private installments: number = 1;
     private category: string = '';
+    private isSubscription: boolean = false; // New toggle state
 
     constructor(app: App, plugin: NexusHubPlugin, card: CreditCard, onSubmit: () => void, transaction?: Transaction) {
         super(app);
         this.plugin = plugin;
         this.card = card;
         this.onSubmit = onSubmit;
+        this.onSubmit = onSubmit;
         this.transaction = transaction;
-        this.category = 'Fatura de Cartão';
+        // Default category empty to encourage selection, or standard default
+        this.category = transaction ? transaction.category : '';
 
         if (transaction) {
             this.description = transaction.description.replace(/\s\(\d+\/\d+\)$/, ''); // Remove (1/N) suffix
@@ -2754,7 +2757,36 @@ export class AddPurchaseModal extends Modal {
         createInput('Descrição da Compra', 'Ex: Celular Novo', this.description, value => this.description = value);
         createCurrencyInput('Valor Total da Compra', 'Digite o valor total', this.totalAmount, value => this.totalAmount = value);
         createInput('Data da Compra', '', this.purchaseDate, value => this.purchaseDate = value, 'date');
-        createInput('Número de Parcelas', 'Ex: 1', String(this.installments), value => this.installments = Math.max(1, Number(value) || 1), 'number');
+
+        // Toggle for Subscription
+        const subContainer = container.createDiv({ cls: 'form-group' });
+        subContainer.style.display = 'flex';
+        subContainer.style.alignItems = 'center';
+        subContainer.style.gap = '10px';
+        subContainer.style.marginTop = '5px';
+
+        const subToggle = new Setting(subContainer)
+            .setName('É uma assinatura (recorrência mensal)?')
+            .setDesc('Se marcado, repetirá todo mês automaticamente.')
+            .addToggle(toggle => toggle
+                .setValue(this.isSubscription)
+                .onChange(value => {
+                    this.isSubscription = value;
+                    // Hide/Show Installments based on logic
+                    const installInput = container.querySelector('.installments-input-group');
+                    if (installInput) {
+                        (installInput as HTMLElement).style.display = value ? 'none' : 'block';
+                    }
+                }));
+
+        // Custom wrapper for Installments to toggle visibility
+        const installGroup = container.createDiv({ cls: 'form-group installments-input-group' });
+        if (this.isSubscription) installGroup.style.display = 'none';
+
+        installGroup.createEl('label', { text: 'Número de Parcelas' });
+        const installInput = installGroup.createEl('input', { attr: { type: 'number', placeholder: 'Ex: 1' } });
+        installInput.value = String(this.installments);
+        installInput.oninput = () => this.installments = Math.max(1, Number(installInput.value) || 1);
 
         renderCategoryDropdown(container, this.plugin, () => this.category, (value) => this.category = value);
     }
@@ -2765,7 +2797,7 @@ export class AddPurchaseModal extends Modal {
             return;
         }
 
-        if (!this.description || this.totalAmount <= 0 || this.installments < 1 || !this.category) {
+        if (!this.description || this.totalAmount <= 0 || (!this.isSubscription && this.installments < 1) || !this.category) {
             new Notice('Descrição, valor, número de parcelas e categoria são obrigatórios.');
             return;
         }
@@ -2780,72 +2812,121 @@ export class AddPurchaseModal extends Modal {
         if (this.transaction) {
             if (this.transaction.installmentOf) {
                 const oldId = this.transaction.installmentOf;
-                // Remove existing installments linked to this purchase (ID Match)
                 this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => t.installmentOf !== oldId);
             } else {
-                // No ID? Check for Regex Pattern (Legacy/Orphan Support)
+                // ... (Regex legacy logic same as before) ...
                 const installmentMatch = this.transaction.description.match(/^(.*?)\s\((\d+)\/(\d+)\)$/);
-
                 if (installmentMatch) {
                     const baseName = installmentMatch[1];
                     const escapedName = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const pattern = new RegExp(`^${escapedName}\\s\\(\\d+\\/\\d+\\)$`);
 
                     this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => {
-                        // Keep if it DOES NOT match criteria
                         if (t.cardId !== this.card.id) return true;
                         return !pattern.test(t.description);
                     });
                 } else {
-                    // Remove single transaction (standard)
                     this.plugin.settings.transactions = this.plugin.settings.transactions.filter(t => t.id !== this.transaction!.id);
                 }
             }
         }
 
-        const installmentAmount = this.totalAmount / this.installments;
-        const purchaseGroupId = this.transaction?.installmentOf || `purch_${Date.now()}`; // Keep ID if editing, else new
-
+        const purchaseGroupId = this.transaction?.installmentOf || `purch_${Date.now()}`;
         const purchaseMoment = moment(this.purchaseDate);
-
         const newTransactions: Transaction[] = [];
 
-        for (let i = 0; i < this.installments; i++) {
-            let paymentMoment = purchaseMoment.clone();
+        if (this.isSubscription) {
+            // --- SUBSCRIPTION LOGIC (GENERATE 5 YEARS) ---
+            // Similar to standard recurrence but tied to credit card bill dates
 
-            // Determine the payment month for this installment
-            if (purchaseMoment.date() > card.closingDay) {
-                paymentMoment.add(1, 'month');
+            // Loop for 5 years (60 months)
+            const loopLimit = 60;
+
+            for (let i = 0; i < loopLimit; i++) {
+                let paymentMoment = purchaseMoment.clone();
+
+                // Determine Bill Month:
+                // If Purchase Day > Closing Day, it goes to NEXT month's bill (relative to purchase month)
+                // BUT for subscription, we assume "Purchase Date" is the "Service Date".
+                // So if service is 5th, closing is 1st. 5th > 1st. Bill is NEXT month.
+                // Each iteration adds 1 month to the "Service Date".
+
+                let currentServiceDate = purchaseMoment.clone().add(i, 'months');
+
+                // Calculate Payment Month for THIS instance
+                let billDate = currentServiceDate.clone();
+                if (currentServiceDate.date() > card.closingDay) {
+                    billDate.add(1, 'month');
+                }
+                // Bill Date is the DUE DATE of that invoice
+                billDate.date(card.dueDate);
+                // Fix: If due day < closing day, logic implies next month too? 
+                // (Reuse logic from standard installment)
+                if (card.dueDate < card.closingDay) {
+                    billDate.add(1, 'month');
+                }
+
+                const isPastDue = billDate.isBefore(moment(), 'day');
+
+                const newTx: Transaction = {
+                    id: `${purchaseGroupId}_sub_${i + 1}`,
+                    description: this.description, // No (x/y) suffix for subscriptions
+                    amount: this.totalAmount, // Full amount each month
+                    date: billDate.format('YYYY-MM-DD'), // Bill due date
+                    category: this.category,
+                    type: 'expense',
+                    status: isPastDue ? 'paid' : 'pending',
+                    isRecurring: true, // Marked as recurring
+                    recurrenceRule: 'monthly',
+                    isInstallment: false, // Not an installment
+                    installmentOf: purchaseGroupId, // Grouped for editing
+                    cardId: card.id,
+                    purchaseDate: currentServiceDate.format('YYYY-MM-DD'),
+                    paymentMonth: billDate.format('YYYY-MM'),
+                };
+                newTransactions.push(newTx);
             }
-            paymentMoment.add(i, 'months');
+            new Notice('Assinatura criada por 5 anos (60 meses).');
 
-            const dueDateMoment = paymentMoment.clone().date(card.dueDate);
+        } else {
+            // --- STANDARD INSTALLMENT LOGIC ---
+            const installmentAmount = this.totalAmount / this.installments;
 
-            // Fix: If due day is earlier than closing day, it implies due date is in the NEXT month relative to the competence month
-            if (card.dueDate < card.closingDay) {
-                dueDateMoment.add(1, 'month');
+            for (let i = 0; i < this.installments; i++) {
+                let paymentMoment = purchaseMoment.clone();
+
+                if (purchaseMoment.date() > card.closingDay) {
+                    paymentMoment.add(1, 'month');
+                }
+                paymentMoment.add(i, 'months');
+
+                const dueDateMoment = paymentMoment.clone().date(card.dueDate);
+
+                if (card.dueDate < card.closingDay) {
+                    dueDateMoment.add(1, 'month');
+                }
+
+                const isPastDue = dueDateMoment.isBefore(moment(), 'day');
+
+                const newTx: Transaction = {
+                    id: `${purchaseGroupId}_${i + 1}`,
+                    description: this.description,
+                    amount: installmentAmount,
+                    date: dueDateMoment.format('YYYY-MM-DD'),
+                    category: this.category,
+                    type: 'expense', // Always expense for purchases
+                    status: isPastDue ? 'paid' : 'pending',
+                    isRecurring: false,
+                    isInstallment: true,
+                    installmentOf: purchaseGroupId,
+                    installmentNumber: i + 1,
+                    totalInstallments: this.installments,
+                    cardId: card.id,
+                    purchaseDate: this.purchaseDate,
+                    paymentMonth: paymentMoment.format('YYYY-MM'),
+                };
+                newTransactions.push(newTx);
             }
-
-            const isPastDue = dueDateMoment.isBefore(moment(), 'day');
-
-            const newTx: Transaction = {
-                id: `${purchaseGroupId}_${i + 1}`,
-                description: this.description,
-                amount: installmentAmount,
-                date: dueDateMoment.format('YYYY-MM-DD'), // Bill due date
-                category: 'Fatura de Cartão',
-                type: 'expense',
-                status: isPastDue ? 'paid' : 'pending',
-                isRecurring: false, // It's an installment, not recurring in the same way
-                isInstallment: true,
-                installmentOf: purchaseGroupId,
-                installmentNumber: i + 1,
-                totalInstallments: this.installments,
-                cardId: card.id,
-                purchaseDate: this.purchaseDate,
-                paymentMonth: paymentMoment.format('YYYY-MM'),
-            };
-            newTransactions.push(newTx);
         }
 
         this.plugin.settings.transactions.push(...newTransactions);
@@ -4546,3 +4627,118 @@ export class ProfileSettingsModal extends Modal {
 
 
 export class NexusScoreHistoryModal extends Modal { constructor(app: App, plugin: NexusHubPlugin) { super(app); } onOpen() { this.close(); } }
+
+export class RegenerateRecurrencesModal extends Modal {
+    plugin: NexusHubPlugin;
+
+    constructor(app: App, plugin: NexusHubPlugin) {
+        super(app);
+        this.plugin = plugin;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass('nexus-fintech-modal');
+
+        contentEl.createEl('h2', { text: 'Reparar/Regenerar Recorrências' });
+        contentEl.createEl('p', { text: 'Esta função irá escanear todas as suas transações recorrentes (Salário, Contas Fixas, Assinaturas) e verificar se há meses faltando nos próximos 5 anos. Útil se o mês de Fevereiro ou outros meses "curtos" não foram gerados corretamente.' });
+        contentEl.createEl('p', { text: 'Isso NÃO duplica o que já existe, apenas preenche os buracos.', attr: { style: 'color: #ccc; font-size: 0.9em;' } });
+
+        new Setting(contentEl)
+            .addButton(btn => btn
+                .setButtonText('Iniciar Reparo')
+                .setCta()
+                .onClick(async () => {
+                    await this.runRepair();
+                    this.close();
+                }));
+    }
+
+    async runRepair() {
+        new Notice('Iniciando análise...');
+
+        // 1. Group Recurring Transactions
+        const groups = new Map<string, Transaction[]>();
+
+        this.plugin.settings.transactions.forEach(t => {
+            if (t.isRecurring && !t.isInstallment) {
+                // Group key: Prefer 'installmentOf' (if used for groups), else Description + Amount
+                const key = t.installmentOf || `${t.description}|${t.amount}|${t.category}`;
+
+                if (!groups.has(key)) {
+                    groups.set(key, []);
+                }
+                groups.get(key)!.push(t);
+            }
+        });
+
+        let addedCount = 0;
+        const today = moment();
+        const limitDate = today.clone().add(5, 'years');
+
+        // 2. Iterate Groups
+        for (const [key, txs] of groups) {
+            // Sort by date
+            txs.sort((a, b) => moment(a.date).diff(moment(b.date)));
+
+            const firstTx = txs[0];
+            const baseDay = moment(firstTx.date).date(); // Original day preference
+
+            // Reconstruct expected dates
+            // Start from the month of the first transaction
+            let cursor = moment(firstTx.date);
+
+            // Loop until limit
+            while (cursor.isBefore(limitDate)) {
+
+                // Construct Expected Date for this month cursor
+                // Robust Clamping: Day 30 in Feb -> 28/29
+                const daysInMonth = cursor.daysInMonth();
+                const safeDay = Math.min(baseDay, daysInMonth);
+                const safeDateStr = `${cursor.format('YYYY-MM')}-${String(safeDay).padStart(2, '0')}`;
+
+                // Check if this date (or roughly this month) exists in txs
+                // We check by YYYY-MM match mainly
+                const exists = txs.some(t => {
+                    return moment(t.date).isSame(cursor, 'month');
+                });
+
+                if (!exists) {
+                    // Create Missing Transaction
+                    // Handle Group ID properly
+                    const groupId = firstTx.installmentOf || `repaired_${Date.now()}`;
+
+                    // If original didnt have group ID, update it? No, risky.
+                    // Just generate new one.
+
+                    const newTx: Transaction = {
+                        ...firstTx, // Copy base props
+                        id: `repaired_${Date.now()}_${cursor.format('YYYYMM')}`,
+                        description: firstTx.description,
+                        amount: firstTx.amount,
+                        date: safeDateStr,
+                        paymentMonth: safeDateStr.substring(0, 7), // Use cursor month
+                        status: 'pending', // Default to pending for future
+                        isRecurring: true,
+                        isInstallment: false,
+                        installmentOf: groupId
+                    };
+
+                    this.plugin.settings.transactions.push(newTx);
+                    addedCount++;
+                }
+
+                cursor.add(1, 'month');
+            }
+        }
+
+        await this.plugin.saveSettings();
+        eventManager.emit('data-changed');
+        new Notice(`Reparo concluído! ${addedCount} transações ausentes foram geradas.`);
+    }
+
+    onClose() {
+        this.contentEl.empty();
+    }
+}

@@ -209,6 +209,15 @@ export default class NexusHubPlugin extends Plugin {
 				}
 			});
 
+			this.addCommand({
+				id: 'repair-recurrences',
+				name: 'Reparar/Regenerar Recorrências (Salário Bugado)',
+				callback: async () => {
+					const { RegenerateRecurrencesModal } = await import('./components/modals');
+					new RegenerateRecurrencesModal(this.app, this).open();
+				}
+			});
+
 			// Debug Status
 			await this.writeDebugLog(`[Nexus Hub] Onboarding Status: ${this.settings.onboardingComplete}, UserName: ${this.settings.userName}`);
 
