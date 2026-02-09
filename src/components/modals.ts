@@ -4812,14 +4812,19 @@ export class RegenerateRecurrencesModal extends Modal {
         // Heuristic: Category 'Salário' OR 'Renda Extra' or Description 'Salário'
         const exists = this.plugin.settings.transactions.some(t => {
             if (t.type !== 'income') return false;
-            // Check Payment Month explicitly
-            if (t.paymentMonth === paymentMonthStr) {
+
+            // FIX: Don't rely solely on paymentMonth as legacy txs might not have it.
+            // Check specific date match (Year and Month)
+            const tDate = moment(t.date);
+            if (!tDate.isValid()) return false;
+
+            if (tDate.format('YYYY-MM') === targetDate.format('YYYY-MM')) {
                 // Determine if it matches the "slot" (roughly same day)
-                const tDay = moment(t.date).date();
+                const tDay = tDate.date();
                 // Tolerance of 5 days? Or just check count?
                 // If bi-weekly, we need 2. 
                 // Simple check: Is the transaction date close to our target date?
-                return Math.abs(tDay - targetDate.date()) < 5;
+                return Math.abs(tDay - targetDate.date()) < 7;
             }
             return false;
         });
