@@ -1129,16 +1129,16 @@ export class NexusHubView extends ItemView {
             });
         }
 
-        const dueDateText = `Vence em: ${moment(transaction.date).format('DD/MM/YYYY')} `;
+        const targetDate = transaction.dueDate ? moment(transaction.dueDate) : moment(transaction.date);
+        const dueDateText = `Vence em: ${targetDate.format('DD/MM/YYYY')} `;
         const dueDateEl = nameContainer.createDiv({ cls: "account-due-date" });
         dueDateEl.setText(dueDateText);
 
-        const dueDate = moment(transaction.date);
         const now = moment();
-        const daysUntilDue = dueDate.diff(now, 'days');
+        const daysUntilDue = targetDate.diff(now, 'days');
 
         if (transaction.status === 'pending') {
-            if (dueDate.isBefore(now, 'day')) {
+            if (targetDate.isBefore(now, 'day')) {
                 dueDateEl.addClass('is-overdue');
             } else if (daysUntilDue <= 3) {
                 const dueSoonIndicator = nameContainer.createSpan({ cls: 'due-soon-indicator' });
